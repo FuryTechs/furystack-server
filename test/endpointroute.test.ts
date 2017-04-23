@@ -35,22 +35,6 @@ export class EndpointTests {
     }
 
     @test
-    public CheckApiRootAvailable(done: () => void) {
-
-        const body = this.EndpointRoute.GetApiRootBody();
-
-        chai.request(EndpointTests.ExpressApp)
-            .get('/' + this.Route + '/')
-            .then((res) => {
-                chai.expect(res.body.message).to.eql(body);
-                done();
-            })
-            .catch((err) => {
-                done();
-            });
-    }
-
-    @test
     public CheckMetadataAvailable(done: () => void) {
         const body = this.EndpointRoute.GetMetadataBody();
         chai.request(EndpointTests.ExpressApp)
