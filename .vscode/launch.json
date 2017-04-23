@@ -1,0 +1,40 @@
+{
+    // Use IntelliSense to learn about possible Node.js debug attributes.
+    // Hover to view descriptions of existing attributes.
+    // For more information, visit: https://go.microsoft.com/fwlink/?linkid=830387
+    "version": "0.2.0",
+    "configurations": [
+        {
+            "type": "node",
+            "request": "launch",
+            "name": "Debug tests",
+            "runtimeExecutable": "mocha",
+            "windows": {
+                "runtimeExecutable": "mocha.cmd"
+            },
+            "preLaunchTask": "build:tests",
+            "runtimeArgs": [
+                "--debug-brk",
+                "-p",
+                "tsconfig.test.json",
+                "test-js/test/index.js"
+            ],
+            "program": "${workspaceRoot}\\test\\index.ts",
+            "outFiles": [
+                "${workspaceRoot}\\test-js\\**\\*.js"
+            ],
+            "port": 5858
+        },
+        {
+            "type": "node",
+            "request": "launch",
+            "preLaunchTask": "build",
+            "name": "Debug Mock",
+            "program": "${workspaceRoot}\\src\\mock.ts",
+            "sourceMaps": true,
+            "outFiles": [
+                "${workspaceRoot}\\dist\\**\\*.js"
+            ]
+        }
+    ]
+}
