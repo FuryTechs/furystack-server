@@ -14,7 +14,7 @@ export class EndpointRoute {
      * Returns the $metadata response body
      */
     public GetMetadataBody(): string {
-        throw new Error('Implement me pls :(');
+        return JSON.stringify(this.EndpointBuilder);
     }
 
     // todo: from modelbuilder
