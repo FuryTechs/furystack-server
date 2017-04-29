@@ -1,4 +1,4 @@
-import { ODataQuery } from 'furystack-core';
+import { CollectionResult, ODataQuery } from 'furystack-core';
 import { DataProviderBase } from './DataProviderBase';
 
 export class InMemoryProvider<EntityType, PrimaryKeyType, Fields> extends DataProviderBase<EntityType, PrimaryKeyType> {
@@ -9,12 +9,16 @@ export class InMemoryProvider<EntityType, PrimaryKeyType, Fields> extends DataPr
         return this.Entities.find((a) =>
             a[this.ModelDescriptor.PrimaryKey.PrimaryKey] as PrimaryKeyType === key);
     }
-    public async GetCollectionAsync(q?: ODataQuery<EntityType, Fields>): Promise<EntityType[]> {
+    public async GetCollectionAsync(q?: ODataQuery<EntityType, Fields>): Promise<CollectionResult<EntityType>> {
 
         // ToDo: Perform filter operations
-        return this.Entities;
+        return new CollectionResult(this.Entities, this.Entities.length);
     }
     public async PostAsync(entity: EntityType): Promise<EntityType> {
+        if (this.Entities.find((a) =>
+            a[this.ModelDescriptor.PrimaryKey.PrimaryKey] === entity[this.ModelDescriptor.PrimaryKey.PrimaryKey])) {
+            throw new Error('Entity already exists!');
+        }
         this.Entities.push(entity);
         return entity;
     }

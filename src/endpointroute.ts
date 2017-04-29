@@ -1,5 +1,5 @@
 import * as Express from 'express';
-import { EndpointBuilder, ODataQuery } from 'furystack-core';
+import { CollectionResult, EndpointBuilder, ODataQuery } from 'furystack-core';
 import { DataProviderBase } from './';
 
 export class EndpointRoute {
@@ -23,16 +23,15 @@ export class EndpointRoute {
 
     private router: Express.Router = Express.Router();
 
-    private async getEntityFromProviderAsync(providerName: string, entityId: string | number) {
-                const dataProvider = this.getDataProviderForEntitySet(providerName);
-                let entity = null;
-                if (!Number(entityId)) {
-                    entity = await dataProvider.GetSingleAsync(entityId) ;
-                } else {
-                    entity = await dataProvider.GetSingleAsync(parseInt(entityId.toString(), 0));
-                }
+    private getEntityIdFromPath(path: string): number | string {
+        const entityId: string = path                               // entitySet(123)
+            .match(/\([0-9a-zA-Z']{1,}\)/g)[0] // (123)
+            .match(/[0-9a-zA-Z]/g).join(''); // 123
+        if (!Number(entityId)) {
+            return entityId;
+        }
+        return parseInt(entityId.toString(), 0);
 
-                return entity;
     }
 
     private registerCollections() {
@@ -48,48 +47,59 @@ export class EndpointRoute {
                 query.OrderBy = odataParams['$orderby'];
 
                 const collection = await this.getDataProviderForEntitySet(entitySet.Name).GetCollectionAsync(query);
-                resp.status(200)
-                    .send(collection);
+                resp.send(200, collection);
             });
 
             /** GET single Entity */
             this.router.get(`/${entitySet.Name}(*)*`, async (req, resp) => {
+                // ToDO: Check if req is custom function
                 const odataParams = req.query;
-                const entityId: string = req.path                               // entitySet(123)
-                                    .match(/\([0-9a-zA-Z']{1,}\)/g)[0] // (123)
-                                    .match(/[0-9a-zA-Z]/g).join(''); // 123
-                const entity = await this.getEntityFromProviderAsync(entitySet.Name, entityId);
+                const id = this.getEntityIdFromPath(req.path);
+                const entity = await this.getDataProviderForEntitySet(entitySet.Name).GetSingleAsync(id);
                 if (entity) {
-                    resp.status(200)
-                        .send(entity);
+                    resp.send(200, entity);
                 } else {
-                    resp.status(404)
-                        .send();
+                    resp.send(404);
                 }
             });
 
-            this.router.post(`/${entitySet.Name}`, (req, resp) => {
+            this.router.post(`/${entitySet.Name}*`, async (req, resp) => {
                 // ToDo: Create entity in store, return created
-                resp.status(200)
-                    .send(['post', entitySet]);
+                // ToDo: check if req is custom action
+                const provider = this.getDataProviderForEntitySet(entitySet.Name);
+                try {
+                    const created = await provider.PostAsync(req.body);
+                    resp.send(200, created);
+                } catch (error) {
+                    resp.send(500, {
+                        error: {
+                            message: error.message,
+                        },
+                    });
+                }
             });
 
-            this.router.put(`/${entitySet.Name}`, (req, resp) => {
+            this.router.put(`/${entitySet.Name}(*)`, async (req, resp) => {
                 // ToDo: put entity to store, return modified
-                resp.status(200)
-                    .send(['post', entitySet]);
+                const id = this.getEntityIdFromPath(req.path);
+                const entity = await this.getDataProviderForEntitySet(entitySet.Name).GetSingleAsync(id);
+                const result = await this.getDataProviderForEntitySet(entitySet.Name).PutAsync(id, req.body);
+                resp.send(200, ['put', result]);
             });
 
-            this.router.patch(`/${entitySet.Name}`, (req, resp) => {
+            this.router.patch(`/${entitySet.Name}(*)`, async (req, resp) => {
                 // ToDo: patch entity in store, return modified
-                resp.status(200)
-                    .send(['post', entitySet]);
+                const id = this.getEntityIdFromPath(req.path);
+                const entity = await this.getDataProviderForEntitySet(entitySet.Name).GetSingleAsync(id);
+                const result = await this.getDataProviderForEntitySet(entitySet.Name).PatchAsync(id, req.body);
+                resp.send(200, ['patch', result]);
             });
 
-            this.router.delete(`/${entitySet.Name}`, (req, resp) => {
+            this.router.delete(`/${entitySet.Name}(*)`, async (req, resp) => {
                 // ToDo: remove entity from store
-                resp.status(204)
-                    .send(['post', entitySet]);
+                const id = this.getEntityIdFromPath(req.path);
+                const result = await this.getDataProviderForEntitySet(entitySet.Name).Delete(id);
+                resp.send(204, {});
             });
         });
     }
