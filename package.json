@@ -7,7 +7,7 @@
     "build": "tsc",
     "pretest": "tsc -p tsconfig.test.json",
     "test": "nyc mocha -p tsconfig.test.json test-js/test/index.js",
-    "posttest": "nyc report --reporter=json && codecov -f coverage/*.json",
+    "posttest": "nyc report --reporter=json --reporter lcov && codecov -f coverage/*.json",
     "test:watch": "mocha-typescript-watch -p tsconfig.test.json ./test-js/test/index.js",
     "mock": "tsc && node dist/mock.js",
     "tslint": "tslint src/index.ts"

@@ -34,4 +34,14 @@ builder.EntitySet(Alma, 'almak');
 
 const endpoint = new EndpointRoute(app, builder);
 
+const dataProvider = new InMemoryProvider(Alma);
+dataProvider.PostAsync({
+    a: null,
+    b: null,
+    id: 1,
+    otherClass: null,
+    otherKey: null,
+});
+endpoint.setDataProviderForEntitySet(dataProvider, 'almak');
+
 app.listen(1111);

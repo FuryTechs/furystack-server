@@ -1,7 +1,7 @@
 import { } from 'furystack-core';
 import { ModelDescriptor, ModelDescriptorStore, ODataQuery } from 'furystack-core';
 
-export abstract class EntityStore<EntityType, PrimaryKeyType>{
+export abstract class DataProviderBase<EntityType, PrimaryKeyType>{
 
     protected readonly ModelDescriptor: ModelDescriptor;
 

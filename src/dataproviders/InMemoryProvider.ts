@@ -1,7 +1,7 @@
 import { ODataQuery } from 'furystack-core';
-import { EntityStore } from './DataProviderBase';
+import { DataProviderBase } from './DataProviderBase';
 
-export class InMemoryProvider<EntityType, PrimaryKeyType, Fields> extends EntityStore<EntityType, PrimaryKeyType> {
+export class InMemoryProvider<EntityType, PrimaryKeyType, Fields> extends DataProviderBase<EntityType, PrimaryKeyType> {
 
     private Entities: EntityType[] = [];
 
@@ -10,6 +10,8 @@ export class InMemoryProvider<EntityType, PrimaryKeyType, Fields> extends Entity
             a[this.ModelDescriptor.PrimaryKey.PrimaryKey] as PrimaryKeyType === key);
     }
     public async GetCollectionAsync(q?: ODataQuery<EntityType, Fields>): Promise<EntityType[]> {
+
+        // ToDo: Perform filter operations
         return this.Entities;
     }
     public async PostAsync(entity: EntityType): Promise<EntityType> {

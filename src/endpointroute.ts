@@ -1,7 +1,10 @@
 import * as Express from 'express';
-import { EndpointBuilder } from 'furystack-core';
+import { EndpointBuilder, ODataQuery } from 'furystack-core';
+import { DataProviderBase } from './';
 
 export class EndpointRoute {
+
+    private dataProviderRefs: Array<DataProviderBase<any, any>> = [];
 
     /**
      * Returns the $metadata response body
@@ -10,14 +13,59 @@ export class EndpointRoute {
         return JSON.stringify(this.EndpointBuilder);
     }
 
+    public setDataProviderForEntitySet(dataProvider: DataProviderBase<any, any>, entitySetName: string) {
+        this.dataProviderRefs[entitySetName] = dataProvider;
+    }
+
+    public getDataProviderForEntitySet(entitySetName: string): DataProviderBase<any, any> {
+        return this.dataProviderRefs[entitySetName];
+    }
+
     private router: Express.Router = Express.Router();
+
+    private async getEntityFromProviderAsync(providerName: string, entityId: string | number) {
+                const dataProvider = this.getDataProviderForEntitySet(providerName);
+                let entity = null;
+                if (!Number(entityId)) {
+                    entity = await dataProvider.GetSingleAsync(entityId) ;
+                } else {
+                    entity = await dataProvider.GetSingleAsync(parseInt(entityId.toString(), 0));
+                }
+
+                return entity;
+    }
 
     private registerCollections() {
         this.EndpointBuilder.GetAllEntitySets().forEach((entitySet) => {
-            this.router.get(`/${entitySet.Name}`, (req, resp) => {
-                // ToDo: Evaluate Get expression (collection with filter or single entity)
+            /** GET Collection */
+            this.router.get(`/${entitySet.Name}`, async (req, resp) => {
+                const odataParams = req.query;
+                const query = new ODataQuery<any, string>();
+
+                // tslint:disable:no-string-literal
+                query.Top = odataParams['$top'];
+                query.Skip = odataParams['$skip'];
+                query.OrderBy = odataParams['$orderby'];
+
+                const collection = await this.getDataProviderForEntitySet(entitySet.Name).GetCollectionAsync(query);
                 resp.status(200)
-                    .send(['get', entitySet]);
+                    .send(collection);
+            });
+
+            /** GET single Entity */
+            this.router.get(`/${entitySet.Name}(*)*`, async (req, resp) => {
+                const odataParams = req.query;
+                const entityId: string = req.path                               // entitySet(123)
+                                    .match(/\([0-9a-zA-Z']{1,}\)/g)[0] // (123)
+                                    .match(/[0-9a-zA-Z]/g).join(''); // 123
+                const entity = await this.getEntityFromProviderAsync(entitySet.Name, entityId);
+                if (entity) {
+                    resp.status(200)
+                        .send(entity);
+                } else {
+                    resp.status(404)
+                        .send();
+                }
             });
 
             this.router.post(`/${entitySet.Name}`, (req, resp) => {
