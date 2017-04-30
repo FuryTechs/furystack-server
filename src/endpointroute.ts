@@ -107,7 +107,7 @@ export class EndpointRoute {
                             resp: Express.Response) {
         const id = EndpointRoute.GetEntityIdFromPath(req.path);
         const result = await dbProvider.PutAsync(id, req.body);
-        resp.status(200).send(['put', result]);
+        resp.status(200).send(result);
     }
 
     private async handlePatch(entitySet: EndpointEntitySet,
@@ -119,7 +119,7 @@ export class EndpointRoute {
         const entity = await dbProvider.GetSingleAsync(id);
         const result = await dbProvider.PatchAsync(id, req.body);
         resp.status(200)
-            .send(['patch', result]);
+            .send(result);
     }
 
     private async handleDelete(entitySet: EndpointEntitySet,
@@ -192,7 +192,7 @@ export class EndpointRoute {
      * @constructs EndpointRoute
      */
     constructor(expressAppRef: Express.Application, private EndpointBuilder: EndpointBuilder) {
-        expressAppRef.use(BodyParser());
+        expressAppRef.use(BodyParser.json());
         this.registerExpressRoute(expressAppRef);
     }
 }

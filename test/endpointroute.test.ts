@@ -141,7 +141,7 @@ export class EndpointTests {
             });
     }
 
-    @test('404 should be returned if querying an entity that doesn\'t exists' )
+    @test('404 should be returned if querying an entity that doesn\'t exists')
     public testGetNotExistingEntity(done: (err?: any) => void) {
         chai.request(this.ExpressApp)
             .get(`/${this.Route}/${this.testCollectionName}\(1\)`)
@@ -212,5 +212,90 @@ export class EndpointTests {
             }).catch((err) => {
                 done(err);
             });
+    }
+
+    @test('Posting an entity that already exists in should fail')
+    public testPostExistingShouldFail(done: (err?: any) => void) {
+        this.testStore.PostAsync({
+            Id: 1,
+            Value: 'alma',
+        });
+        chai.request(this.ExpressApp)
+            .post(`/${this.Route}/${this.testCollectionName}`)
+            .set('content-type', 'application/json')
+            .send({
+                Id: 1,
+                Value: 'körte',
+            } as TestClass)
+            .then((res) => {
+                done('Entity post with the same ID should fail, but it was successful');
+            }).catch((err) => {
+                done();
+            });
+    }
+
+    @test('PUTting an entity that already exists should overwrite all property')
+    public testPutOverrides(done: (err?: any) => void) {
+        this.testStore.PostAsync({
+            Id: 1,
+            Value: 'alma',
+        });
+        chai.request(this.ExpressApp)
+            .put(`/${this.Route}/${this.testCollectionName}(1)`)
+            .set('content-type', 'application/json')
+            .send({
+                Id: 1,
+                Value2: 'Körte',
+            } as TestClass)
+            .then((res) => {
+                const returned = res.body as TestClass;
+                chai.expect(returned.Value).to.be.eq(undefined);
+                this.testStore.GetSingleAsync(1).then((result) => {
+                    chai.expect(result.Value).to.be.eq(undefined);
+                    chai.expect(result.Value2).to.be.eq('Körte');
+                    done();
+                }, done);
+            }).catch(done);
+    }
+
+    @test('Patching an entity that already exists should overwrite changed property only')
+    public testPatchOverrides(done: (err?: any) => void) {
+        this.testStore.PostAsync({
+            Id: 1,
+            Value: 'alma',
+        });
+        chai.request(this.ExpressApp)
+            .patch(`/${this.Route}/${this.testCollectionName}(1)`)
+            .set('content-type', 'application/json')
+            .send({
+                Id: 1,
+                Value2: 'Körte',
+            } as TestClass)
+            .then((res) => {
+                const returned = res.body as TestClass;
+                chai.expect(returned.Value).to.be.eq('alma');
+                this.testStore.GetSingleAsync(1).then((result) => {
+                    chai.expect(result.Value).to.be.eq('alma');
+                    chai.expect(result.Value2).to.be.eq('Körte');
+                    done();
+                }, done);
+            }).catch(done);
+    }
+
+    @test('Patching an entity that already exists should overwrite changed property only')
+    public testDeleteRemove(done: (err?: any) => void) {
+        this.testStore.PostAsync({
+            Id: 1,
+            Value: 'alma',
+        });
+        chai.request(this.ExpressApp)
+            .del(`/${this.Route}/${this.testCollectionName}(1)`)
+            .then((res) => {
+                chai.expect(res.status).to.be.eq(204);
+                this.testStore.GetSingleAsync(1).then((result) => {
+                    chai.expect(result).to.be.eq(undefined);
+                    done();
+                }, done);
+            }).catch(done);
     }
 }
