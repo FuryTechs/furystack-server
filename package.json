@@ -2,7 +2,8 @@
   "name": "furystack-server",
   "version": "1.0.0-alpha-3",
   "description": "FuryStack framework, Server implementation",
-  "main": "src/index.js",
+  "main": "dist/index.js",
+  "types": "dist/index.d.ts",
   "scripts": {
     "build": "tsc",
     "pretest": "tsc -p tsconfig.test.json",
