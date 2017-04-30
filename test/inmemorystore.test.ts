@@ -61,7 +61,7 @@ export class InMemoryStoreTests {
         await this.store.PostAsync({ Id: 2, Name: n2 });
 
         const result = await this.store.GetCollectionAsync();
-        chai.expect(result.length).equals(2);
+        chai.expect(result.value.length).equals(2);
     }
 
     @test('Test POST and Patch, expect that only the patched values will be changed')
@@ -124,17 +124,17 @@ export class InMemoryStoreTests {
         await this.store.PostAsync(e2);
 
         const res = await this.store.GetCollectionAsync();
-        chai.expect(res.length).equals(2);
+        chai.expect(res.value.length).equals(2);
 
         await this.store.Delete(e1.Id);
 
         const res2 = await this.store.GetCollectionAsync();
-        chai.expect(res2.length).equals(1);
-        chai.expect(res2[0].Id).equals(e2.Id);
+        chai.expect(res2.value.length).equals(1);
+        chai.expect(res2.value[0].Id).equals(e2.Id);
 
         await this.store.Delete(e2.Id);
         const res3 = await this.store.GetCollectionAsync();
-        chai.expect(res3.length).equals(0);
+        chai.expect(res3.value.length).equals(0);
     }
 
 }

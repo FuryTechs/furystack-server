@@ -1,7 +1,7 @@
 import { } from 'furystack-core';
-import { ModelDescriptor, ModelDescriptorStore, ODataQuery } from 'furystack-core';
+import { CollectionResult, ModelDescriptor, ModelDescriptorStore, ODataQuery } from 'furystack-core';
 
-export abstract class EntityStore<EntityType, PrimaryKeyType>{
+export abstract class DataProviderBase<EntityType, PrimaryKeyType>{
 
     protected readonly ModelDescriptor: ModelDescriptor;
 
@@ -14,7 +14,7 @@ export abstract class EntityStore<EntityType, PrimaryKeyType>{
         Promise<EntityType>;
     public abstract async GetCollectionAsync<K extends keyof EntityType>(
         query?: ODataQuery<EntityType, K>):
-        Promise<EntityType[]>;
+        Promise<CollectionResult<EntityType>>;
     public abstract async PostAsync(entity: EntityType): Promise<EntityType>;
     public abstract async PatchAsync(primaryKey: PrimaryKeyType, delta: Partial<EntityType>): Promise<EntityType>;
     public abstract async PutAsync(primaryKey: PrimaryKeyType, entity: EntityType): Promise<EntityType>;
