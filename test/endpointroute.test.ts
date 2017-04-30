@@ -72,6 +72,18 @@ export class EndpointTests {
             });
     }
 
+    @test('Querying collection without defined DataProvider should throw error')
+    public testCollectionWithoutDataProvider(done: (err?: any) => void) {
+        this.EndpointBuilder.EntitySet(TestClass, 'testClassWithotDataProvider');
+        chai.request(this.ExpressApp)
+            .get('/' + this.Route + '/testClassWithotDataProvider')
+            .then((res) => {
+                done('Request should fail, but it succeeded.');
+            }).catch((err) => {
+                done();
+            });
+    }
+
     @test('Check if an example entitySet has valid response and no members by default')
     public testGetEmptyCollection(done: (err?: any) => void) {
         chai.request(this.ExpressApp)
@@ -98,6 +110,35 @@ export class EndpointTests {
                 chai.expect(res.status).to.be.eq(200);
                 chai.expect(responseValue.value.length).to.be.eq(1);
                 chai.expect(responseValue.value[0].Value).to.be.eq('alma');
+                done();
+            }).catch((err) => {
+                done(err);
+            });
+    }
+
+    @test('404 should be returned if querying an entity that doesn\'t exists' )
+    public testGetNotExistingEntity(done: (err?: any) => void) {
+        chai.request(this.ExpressApp)
+            .get(`/${this.Route}/${this.collectionName}(1)`)
+            .then((res) => {
+                done('404 shuld be returned, but the request succeeded');
+            }).catch((err) => {
+                done();
+            });
+    }
+
+    @test('Check if getting a single entity will be returned correctly')
+    public testGetSingleEntity(done: (err?: any) => void) {
+        this.store.PostAsync({
+            Id: 1,
+            Value: 'alma',
+        });
+        chai.request(this.ExpressApp)
+            .get(`/${this.Route}/${this.collectionName}(1)`)
+            .then((res) => {
+                const responseValue = res.body as TestClass;
+                chai.expect(res.status).to.be.eq(200);
+                chai.expect(responseValue.Value).to.be.eq('alma');
                 done();
             }).catch((err) => {
                 done(err);
