@@ -1,6 +1,13 @@
+import * as BodyParser from 'body-parser';
 import * as Express from 'express';
 import { CollectionResult, EndpointBuilder, EndpointEntitySet, ODataQuery } from 'furystack-core';
 import { DataProviderBase } from './';
+
+// tslint:disable-next-line:no-unused-expression
+type requestHandler = (entitySet: EndpointEntitySet,
+                       dataProvider: DataProviderBase<any, any>,
+                       req: Express.Request,
+                       resp: Express.Response) => void;
 
 export class EndpointRoute {
 
@@ -38,7 +45,7 @@ export class EndpointRoute {
 
     private router: Express.Router = Express.Router();
 
-    private getEntityIdFromPath(path: string): number | string {
+    public static GetEntityIdFromPath(path: string): number | string {
         const entityId: string = path           // entitySet(123)
             .match(/\([0-9a-zA-Z']{1,}\)/g)[0]  // (123)
             .match(/[0-9a-zA-Z]/g).join('');    // 123
@@ -49,8 +56,11 @@ export class EndpointRoute {
 
     }
 
-    private async handleGetCollection(entitySet: EndpointEntitySet, req: Express.Request, resp: Express.Response) {
-        // ToDo: Check if this is a custom action
+    private async handleGetCollection(entitySet: EndpointEntitySet,
+                                      dbProvider: DataProviderBase<any, any>,
+                                      req: Express.Request,
+                                      resp: Express.Response) {
+
         const odataParams = req.query;
         const query = new ODataQuery<any, string>();
 
@@ -59,77 +69,102 @@ export class EndpointRoute {
         query.Skip = odataParams['$skip'];
         query.OrderBy = odataParams['$orderby'];
 
-        const collection = await this.getDataProviderForEntitySet(entitySet.Name).GetCollectionAsync(query);
+        const collection = await dbProvider.GetCollectionAsync(query);
         resp.status(200).send(collection);
+        // ToDo: Check if this is a custom action
     }
 
-    private async handleGetSingleEntity(entitySet: EndpointEntitySet, req: Express.Request, resp: Express.Response) {
+    private async handleGetSingleEntity(entitySet: EndpointEntitySet,
+                                        dbProvider: DataProviderBase<any, any>,
+                                        req: Express.Request,
+                                        resp: Express.Response) {
         // ToDo: Check if req is custom function
         const odataParams = req.query;
-        const id = this.getEntityIdFromPath(req.path);
-        const entity = await this.getDataProviderForEntitySet(entitySet.Name).GetSingleAsync(id);
+        const id = EndpointRoute.GetEntityIdFromPath(req.path);
+        const entity = await dbProvider.GetSingleAsync(id);
         if (entity) {
-            resp.status(200).send(entity);
+            resp.status(200)
+                .send(entity);
         } else {
-            resp.status(404).send({});
+            resp.status(404)
+                .send({});
         }
+
     }
 
-    private async handlePost(entitySet: EndpointEntitySet, req: Express.Request, resp: Express.Response) {
+    private async handlePost(entitySet: EndpointEntitySet,
+                             dbProvider: DataProviderBase<any, any>,
+                             req: Express.Request,
+                             resp: Express.Response) {
         // ToDo: check if req is custom action
-        const provider = this.getDataProviderForEntitySet(entitySet.Name);
-        try {
-            const created = await provider.PostAsync(req.body);
-            resp.status(200).send(created);
-        } catch (error) {
-            resp.status(500).send({
-                error: {
-                    message: error.message,
-                },
-            });
-        }
+        const created = await dbProvider.PostAsync(req.body);
+        resp.status(200).send(created);
     }
 
-    private async handlePut(entitySet: EndpointEntitySet, req: Express.Request, resp: Express.Response) {
-        const id = this.getEntityIdFromPath(req.path);
-        const entity = await this.getDataProviderForEntitySet(entitySet.Name).GetSingleAsync(id);
-        const result = await this.getDataProviderForEntitySet(entitySet.Name).PutAsync(id, req.body);
+    private async handlePut(entitySet: EndpointEntitySet,
+                            dbProvider: DataProviderBase<any, any>,
+                            req: Express.Request,
+                            resp: Express.Response) {
+        const id = EndpointRoute.GetEntityIdFromPath(req.path);
+        const result = await dbProvider.PutAsync(id, req.body);
         resp.status(200).send(['put', result]);
     }
 
-    private async handlePatch(entitySet: EndpointEntitySet, req: Express.Request, resp: Express.Response) {
-        const id = this.getEntityIdFromPath(req.path);
-        const entity = await this.getDataProviderForEntitySet(entitySet.Name).GetSingleAsync(id);
-        const result = await this.getDataProviderForEntitySet(entitySet.Name).PatchAsync(id, req.body);
-        resp.status(200).send(['patch', result]);
+    private async handlePatch(entitySet: EndpointEntitySet,
+                              dbProvider: DataProviderBase<any, any>,
+                              req: Express.Request,
+                              resp: Express.Response) {
+
+        const id = EndpointRoute.GetEntityIdFromPath(req.path);
+        const entity = await dbProvider.GetSingleAsync(id);
+        const result = await dbProvider.PatchAsync(id, req.body);
+        resp.status(200)
+            .send(['patch', result]);
     }
 
-    private async handleDelete(entitySet: EndpointEntitySet, req: Express.Request, resp: Express.Response) {
-        const id = this.getEntityIdFromPath(req.path);
-        const result = await this.getDataProviderForEntitySet(entitySet.Name).Delete(id);
+    private async handleDelete(entitySet: EndpointEntitySet,
+                               dbProvider: DataProviderBase<any, any>,
+                               req: Express.Request,
+                               resp: Express.Response) {
+        const id = EndpointRoute.GetEntityIdFromPath(req.path);
+        const result = await dbProvider.Delete(id);
         resp.status(204).send({});
+    }
+
+    private async handleWrapper(handler: requestHandler,
+                                entitySet: EndpointEntitySet, req: Express.Request, resp: Express.Response) {
+        try {
+            const dbProvider = this.getDataProviderForEntitySet(entitySet.Name);
+            await handler(entitySet, dbProvider, req, resp);
+        } catch (error) {
+            resp.status(500)
+                .send({
+                    error: {
+                        message: error.message,
+                    },
+                });
+        }
     }
 
     private registerCollections() {
         this.EndpointBuilder.GetAllEntitySets().forEach((entitySet) => {
-
-            this.router.get(`/${entitySet.Name}`, async (req, resp) =>
-                this.handleGetCollection(entitySet, req, resp));
+            this.router.get([`/${entitySet.Name}`, `/${entitySet.Name}/*`], async (req, resp) =>
+                this.handleWrapper(this.handleGetCollection, entitySet, req, resp));
 
             this.router.get(`/${entitySet.Name}(*)*`, async (req, resp) =>
-                this.handleGetSingleEntity(entitySet, req, resp));
+                this.handleWrapper(this.handleGetSingleEntity, entitySet, req, resp));
 
             this.router.post(`/${entitySet.Name}*`, async (req, resp) =>
-                this.handlePost(entitySet, req, resp));
+                this.handleWrapper(this.handlePost, entitySet, req, resp));
 
             this.router.put(`/${entitySet.Name}(*)`, async (req, resp) =>
-                this.handlePut(entitySet, req, resp));
+                this.handleWrapper(this.handlePut, entitySet, req, resp));
 
             this.router.patch(`/${entitySet.Name}(*)`, async (req, resp) =>
-                this.handlePatch(entitySet, req, resp));
+                this.handleWrapper(this.handlePatch, entitySet, req, resp));
 
             this.router.delete(`/${entitySet.Name}(*)`, async (req, resp) =>
-                this.handleDelete(entitySet, req, resp));
+                this.handleWrapper(this.handleDelete, entitySet, req, resp));
         });
     }
 
@@ -157,6 +192,7 @@ export class EndpointRoute {
      * @constructs EndpointRoute
      */
     constructor(expressAppRef: Express.Application, private EndpointBuilder: EndpointBuilder) {
+        expressAppRef.use(BodyParser());
         this.registerExpressRoute(expressAppRef);
     }
 }

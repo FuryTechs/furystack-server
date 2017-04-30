@@ -12,6 +12,9 @@ class TestClass {
 
     @Property
     public Value: string;
+
+    @Property
+    public Value2?: string;
 }
 
 class TestGuidClass {
@@ -92,9 +95,13 @@ export class EndpointTests {
 
     @test('Querying collection without defined DataProvider should throw error')
     public testCollectionWithoutDataProvider(done: (err?: any) => void) {
-        this.EndpointBuilder.EntitySet(TestClass, 'testClassWithotDataProvider');
+        this.EndpointBuilder.EntitySet(TestClass, 'testClassWithoutDataProvider');
+
+        // Need to register it again...
+        this.EndpointRoute = new EndpointRoute(this.ExpressApp, this.EndpointBuilder);
+
         chai.request(this.ExpressApp)
-            .get('/' + this.Route + '/testClassWithotDataProvider')
+            .get('/' + this.Route + '/testClassWithoutDataProvider')
             .then((res) => {
                 done('Request should fail, but it succeeded.');
             }).catch((err) => {
@@ -176,6 +183,32 @@ export class EndpointTests {
                 chai.expect(res.status).to.be.eq(200);
                 chai.expect(responseValue.Value).to.be.eq('alma');
                 done();
+            }).catch((err) => {
+                done(err);
+            });
+    }
+
+    @test('Check if entity is available in store after post')
+    public testPostEntity(done: (err?: any) => void) {
+        chai.request(this.ExpressApp)
+            .post(`/${this.Route}/${this.testCollectionName}`)
+            .set('content-type', 'application/json')
+            .send({
+                Id: 4,
+                Value: 'körte',
+            } as TestClass)
+            .then((res) => {
+                const responseValue = res.body as TestClass;
+                chai.expect(res.status).to.be.eq(200);
+                chai.expect(responseValue.Value).to.be.eq('körte');
+                chai.expect(responseValue.Id).to.be.eq(4);
+
+                this.testStore.GetSingleAsync(4).then((result) => {
+                    chai.expect(result.Id).to.be.eq(4);
+                    chai.expect(result.Value).to.be.eq('körte');
+                    done();
+                }, done);
+
             }).catch((err) => {
                 done(err);
             });

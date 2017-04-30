@@ -1,11 +1,8 @@
-import * as BodyParser from 'body-parser';
 import * as Express from 'express';
 import { EndpointBuilder, ForeignKey, PrimaryKey, Property } from 'furystack-core';
 import { InMemoryProvider } from './dataproviders';
 import { EndpointRoute } from './endpointroute';
 const app = Express();
-
-app.use(BodyParser());
 
 const builder = new EndpointBuilder('Api');
 
