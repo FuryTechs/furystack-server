@@ -14,16 +14,27 @@ class TestClass {
     public Value: string;
 }
 
+class TestGuidClass {
+    @PrimaryKey
+    public Guid: string;
+
+    @Property
+    public Value: string;
+}
+
 @suite
 export class EndpointTests {
 
     private EndpointRoute: EndpointRoute;
     private EndpointBuilder: EndpointBuilder;
     private ExpressApp: Express.Application = Express();
-    private store: DataProviderBase<TestClass, number>;
+    private testStore: DataProviderBase<TestClass, number>;
+
+    private testGuidStore: DataProviderBase<TestGuidClass, string>;
     private Route: string = 'api';
 
-    private readonly collectionName = 'testentities';
+    private readonly testCollectionName = 'testentities';
+    private readonly testGuidCollectionName = 'testGuidCollectionName';
 
     constructor() {
         chai.use(chaiHttp);
@@ -31,12 +42,19 @@ export class EndpointTests {
 
     public before() {
         this.ExpressApp = Express();
-        this.store = new InMemoryProvider(TestClass);
         this.EndpointBuilder = new EndpointBuilder(this.Route);
+
+        this.testStore = new InMemoryProvider(TestClass);
         this.EndpointBuilder.EntityType(TestClass);
-        this.EndpointBuilder.EntitySet(TestClass, this.collectionName);
+        this.EndpointBuilder.EntitySet(TestClass, this.testCollectionName);
+
+        this.testGuidStore = new InMemoryProvider(TestGuidClass);
+        this.EndpointBuilder.EntityType(TestGuidClass);
+        this.EndpointBuilder.EntitySet(TestGuidClass, this.testGuidCollectionName);
+
         this.EndpointRoute = new EndpointRoute(this.ExpressApp, this.EndpointBuilder);
-        this.EndpointRoute.setDataProviderForEntitySet(this.store, this.collectionName);
+        this.EndpointRoute.setDataProviderForEntitySet(this.testStore, this.testCollectionName);
+        this.EndpointRoute.setDataProviderForEntitySet(this.testGuidStore, this.testGuidCollectionName);
     }
 
     @test('Endpoint route creation')
@@ -54,8 +72,8 @@ export class EndpointTests {
     @test('Set and Get DataStore should be the same')
     public SetGetDataProvider() {
         const dp = new InMemoryProvider(TestClass);
-        this.EndpointRoute.setDataProviderForEntitySet(dp, this.collectionName);
-        chai.expect(dp).to.be.eq(this.EndpointRoute.getDataProviderForEntitySet(this.collectionName));
+        this.EndpointRoute.setDataProviderForEntitySet(dp, this.testCollectionName);
+        chai.expect(dp).to.be.eq(this.EndpointRoute.getDataProviderForEntitySet(this.testCollectionName));
     }
 
     @test('Check if $metadata is available')
@@ -87,7 +105,7 @@ export class EndpointTests {
     @test('Check if an example entitySet has valid response and no members by default')
     public testGetEmptyCollection(done: (err?: any) => void) {
         chai.request(this.ExpressApp)
-            .get('/' + this.Route + '/' + this.collectionName)
+            .get('/' + this.Route + '/' + this.testCollectionName)
             .then((res) => {
                 chai.expect(res.status).to.be.eq(200);
                 chai.expect((res.body as CollectionResult<TestClass>).value.length).to.be.eq(0);
@@ -99,12 +117,12 @@ export class EndpointTests {
 
     @test('Check if an example entitySet has valid response and returns added members')
     public testGetCollectionValues(done: (err?: any) => void) {
-        this.store.PostAsync({
+        this.testStore.PostAsync({
             Id: 1,
             Value: 'alma',
         });
         chai.request(this.ExpressApp)
-            .get('/' + this.Route + '/' + this.collectionName)
+            .get('/' + this.Route + '/' + this.testCollectionName)
             .then((res) => {
                 const responseValue = res.body as CollectionResult<TestClass>;
                 chai.expect(res.status).to.be.eq(200);
@@ -119,7 +137,7 @@ export class EndpointTests {
     @test('404 should be returned if querying an entity that doesn\'t exists' )
     public testGetNotExistingEntity(done: (err?: any) => void) {
         chai.request(this.ExpressApp)
-            .get(`/${this.Route}/${this.collectionName}(1)`)
+            .get(`/${this.Route}/${this.testCollectionName}\(1\)`)
             .then((res) => {
                 done('404 shuld be returned, but the request succeeded');
             }).catch((err) => {
@@ -129,12 +147,30 @@ export class EndpointTests {
 
     @test('Check if getting a single entity will be returned correctly')
     public testGetSingleEntity(done: (err?: any) => void) {
-        this.store.PostAsync({
+        this.testStore.PostAsync({
             Id: 1,
             Value: 'alma',
         });
         chai.request(this.ExpressApp)
-            .get(`/${this.Route}/${this.collectionName}(1)`)
+            .get(`/${this.Route}/${this.testCollectionName}(1)`)
+            .then((res) => {
+                const responseValue = res.body as TestClass;
+                chai.expect(res.status).to.be.eq(200);
+                chai.expect(responseValue.Value).to.be.eq('alma');
+                done();
+            }).catch((err) => {
+                done(err);
+            });
+    }
+
+    @test('Check if getting a single entity with guid will be returned correctly')
+    public testGetSingleEntityGuid(done: (err?: any) => void) {
+        this.testGuidStore.PostAsync({
+            Guid: 'alma',
+            Value: 'alma',
+        });
+        chai.request(this.ExpressApp)
+            .get(`/${this.Route}/${this.testGuidCollectionName}(alma)`)
             .then((res) => {
                 const responseValue = res.body as TestClass;
                 chai.expect(res.status).to.be.eq(200);
