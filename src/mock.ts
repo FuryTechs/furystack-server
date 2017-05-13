@@ -32,7 +32,7 @@ builder.EntityType(Alma);
 builder.EntitySet(OtherClass, 'others');
 builder.EntitySet(Alma, 'almak');
 
-const endpoint = new EndpointRoute(app, builder);
+const endpointRoute = new EndpointRoute(app, builder);
 
 const dataProvider = new InMemoryProvider(Alma);
 dataProvider.PostAsync({
@@ -42,6 +42,14 @@ dataProvider.PostAsync({
     otherClass: null,
     otherKey: null,
 });
-endpoint.setDataProviderForEntitySet(dataProvider, 'almak');
+endpointRoute.setDataProviderForEntitySet(dataProvider, 'almak');
+
+builder.CustomAction('Custom1', 'GET', String, Number);
+
+endpointRoute.ImplementAction<string, number>('Custom1', (arg, req) => {
+    return arg.length;
+});
+
+endpointRoute.EntitySet(Alma, 'almak').SetDataProvider(dataProvider);
 
 app.listen(1111);

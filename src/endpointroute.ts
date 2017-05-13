@@ -1,17 +1,35 @@
 import * as BodyParser from 'body-parser';
 import * as Express from 'express';
-import { CollectionResult, EndpointBuilder, EndpointEntitySet, ODataQuery } from 'furystack-core';
+import { CollectionResult, CustomAction, EndpointBuilder,
+    EndpointEntitySet, ModelDescriptorStore, ODataQuery } from 'furystack-core';
 import { DataProviderBase } from './';
+import { ServerActionOwnerAbstract, ServerEntitySet, ServerEntityType } from './ServerScoped';
 
 // tslint:disable-next-line:no-unused-expression
-type requestHandler = (entitySet: EndpointEntitySet,
+type requestHandler = (entitySet: ServerEntitySet<any, any>,
                        dataProvider: DataProviderBase<any, any>,
                        req: Express.Request,
                        resp: Express.Response) => void;
 
-export class EndpointRoute {
+export class EndpointRoute extends ServerActionOwnerAbstract {
+    protected getActionByName<TBody, TReturns>(name: string): CustomAction<TBody, TReturns> {
+        return this.EndpointBuilder.CustomAction(name) as CustomAction<TBody, TReturns>;
+    }
+
+    public EntitySet<T, K = any>(entityTypeClass: { new (): T },
+                                 entitySetName: string): ServerEntitySet<T, K> {
+        return this.entitySets.find((s) => s.Name === entitySetName);
+    }
+
+    public EntityType<T>(entityTypeClass: {new(): T}): ServerEntityType {
+        const entityTypeName = ModelDescriptorStore.GetName(entityTypeClass);
+        return this.entityTypes.find((t) => t.Name === entityTypeName);
+    }
 
     private dataProviderRefs: Array<DataProviderBase<any, any>> = [];
+
+    private readonly entitySets: Array<ServerEntitySet<any, any>>;
+    private readonly entityTypes: ServerEntityType[];
 
     /**
      * Returns the $metadata response body
@@ -56,7 +74,7 @@ export class EndpointRoute {
 
     }
 
-    private async handleGetCollection(entitySet: EndpointEntitySet,
+    private async handleGetCollection(entitySet: ServerEntitySet<any, any>,
                                       dbProvider: DataProviderBase<any, any>,
                                       req: Express.Request,
                                       resp: Express.Response) {
@@ -74,7 +92,7 @@ export class EndpointRoute {
         // ToDo: Check if this is a custom action
     }
 
-    private async handleGetSingleEntity(entitySet: EndpointEntitySet,
+    private async handleGetSingleEntity(entitySet: ServerEntitySet<any, any>,
                                         dbProvider: DataProviderBase<any, any>,
                                         req: Express.Request,
                                         resp: Express.Response) {
@@ -92,7 +110,7 @@ export class EndpointRoute {
 
     }
 
-    private async handlePost(entitySet: EndpointEntitySet,
+    private async handlePost(entitySet: ServerEntitySet<any, any>,
                              dbProvider: DataProviderBase<any, any>,
                              req: Express.Request,
                              resp: Express.Response) {
@@ -101,7 +119,7 @@ export class EndpointRoute {
         resp.status(200).send(created);
     }
 
-    private async handlePut(entitySet: EndpointEntitySet,
+    private async handlePut(entitySet: ServerEntitySet<any, any>,
                             dbProvider: DataProviderBase<any, any>,
                             req: Express.Request,
                             resp: Express.Response) {
@@ -110,7 +128,7 @@ export class EndpointRoute {
         resp.status(200).send(result);
     }
 
-    private async handlePatch(entitySet: EndpointEntitySet,
+    private async handlePatch(entitySet: ServerEntitySet<any, any>,
                               dbProvider: DataProviderBase<any, any>,
                               req: Express.Request,
                               resp: Express.Response) {
@@ -122,7 +140,7 @@ export class EndpointRoute {
             .send(result);
     }
 
-    private async handleDelete(entitySet: EndpointEntitySet,
+    private async handleDelete(entitySet: ServerEntitySet<any, any>,
                                dbProvider: DataProviderBase<any, any>,
                                req: Express.Request,
                                resp: Express.Response) {
@@ -132,7 +150,7 @@ export class EndpointRoute {
     }
 
     private async handleWrapper(handler: requestHandler,
-                                entitySet: EndpointEntitySet, req: Express.Request, resp: Express.Response) {
+                                entitySet: ServerEntitySet<any, any>, req: Express.Request, resp: Express.Response) {
         try {
             const dbProvider = this.getDataProviderForEntitySet(entitySet.Name);
             await handler(entitySet, dbProvider, req, resp);
@@ -147,7 +165,7 @@ export class EndpointRoute {
     }
 
     private registerCollections() {
-        this.EndpointBuilder.GetAllEntitySets().forEach((entitySet) => {
+        this.entitySets.forEach((entitySet) => {
             this.router.get([`/${entitySet.Name}`, `/${entitySet.Name}/*`], async (req, resp) =>
                 this.handleWrapper(this.handleGetCollection, entitySet, req, resp));
 
@@ -191,7 +209,14 @@ export class EndpointRoute {
      * @param ModelBuilder The OData modelbuilder which defines what entities will be registered into the endpoint
      * @constructs EndpointRoute
      */
-    constructor(expressAppRef: Express.Application, private EndpointBuilder: EndpointBuilder) {
+    constructor(expressAppRef: Express.Application, protected EndpointBuilder: EndpointBuilder) {
+        super();
+        this.entitySets = EndpointBuilder.GetAllEntitySets().map((s) =>
+            new ServerEntitySet(s,
+                s.EndpointEntityType.ModelDescriptor.Object,
+                // tslint:disable-next-line:max-line-length
+                s.EndpointEntityType.ModelDescriptor.Object[s.EndpointEntityType.ModelDescriptor.PrimaryKey.PrimaryKey] ));
+        this.entityTypes = EndpointBuilder.GetAllEntityTypes().map((s) => new ServerEntityType(s));
         expressAppRef.use(BodyParser.json());
         this.registerExpressRoute(expressAppRef);
     }
