@@ -3,7 +3,7 @@ import { ServerCustomAction } from './ServerCustomAction';
 
 export abstract class ServerActionOwnerAbstract {
 
-    protected implementedActions: Array<ServerCustomAction<any, any>>;
+    protected implementedActions: Array<ServerCustomAction<any, any>> = [];
     protected abstract getActionByName<TBody, TReturns>(name: string):
         CustomAction<TBody, TReturns>;
 
