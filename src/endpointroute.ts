@@ -130,24 +130,35 @@ export class EndpointRoute extends ServerActionOwnerAbstract {
 
     private registerEntitySets() {
         this.entitySets.forEach((entitySet) => {
-            this.router.get([`/${entitySet.Name}`, `/${entitySet.Name}/*`], async (req, resp) =>
+            this.router.get([`/${entitySet.Name}`, `/${entitySet.Name}/`], async (req, resp) =>
                 this.handleWrapper(this.handleGetCollection, entitySet, req, resp));
 
-            this.router.get(`/${entitySet.Name}(*)*`, async (req, resp) =>
+            this.router.get(`/${entitySet.Name}(:id)`, async (req, resp) =>
                 this.handleWrapper(this.handleGetSingleEntity, entitySet, req, resp));
 
-            this.router.post(`/${entitySet.Name}*`, async (req, resp) =>
+            this.router.post(`/${entitySet.Name}`, async (req, resp) =>
                 this.handleWrapper(this.handlePost, entitySet, req, resp));
 
-            this.router.put(`/${entitySet.Name}(*)`, async (req, resp) =>
+            this.router.put(`/${entitySet.Name}(:id)`, async (req, resp) =>
                 this.handleWrapper(this.handlePut, entitySet, req, resp));
 
-            this.router.patch(`/${entitySet.Name}(*)`, async (req, resp) =>
+            this.router.patch(`/${entitySet.Name}(:id)`, async (req, resp) =>
                 this.handleWrapper(this.handlePatch, entitySet, req, resp));
 
-            this.router.delete(`/${entitySet.Name}(*)`, async (req, resp) =>
+            this.router.delete(`/${entitySet.Name}(:id)`, async (req, resp) =>
                 this.handleWrapper(this.handleDelete, entitySet, req, resp));
+
+            entitySet.GetActions().forEach((action) => {
+                this.registerActionTo(action, `/${entitySet.Name}/`);
+            });
+
+            const entityType = this.entityTypes.find((type) => type.Name === entitySet.EndpointEntityType.Name);
+            entityType.GetActions().forEach((action) => {
+                this.registerActionTo(action, `/${entitySet.Name}(:id)/`);
+            });
+
         });
+
     }
 
     private registerActionTo<TBody, TReturns>(action: ServerCustomAction<TBody, TReturns>, path: string) {

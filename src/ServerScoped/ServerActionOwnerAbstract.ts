@@ -4,6 +4,11 @@ import { ServerCustomAction } from './ServerCustomAction';
 export abstract class ServerActionOwnerAbstract {
 
     protected implementedActions: Array<ServerCustomAction<any, any>> = [];
+
+    public GetActions() {
+        return this.implementedActions;
+    }
+
     protected abstract getActionByName<TBody, TReturns>(name: string):
         CustomAction<TBody, TReturns>;
 

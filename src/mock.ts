@@ -26,15 +26,19 @@ class Alma {
     public otherClass: OtherClass;
 }
 
-builder.EntityType(OtherClass)
-    .CustomAction('OtherClassTypeBoundAction', 'GET', OtherClass, OtherClass);
 builder.EntityType(Alma);
-
+builder.EntityType(OtherClass);
 builder.EntitySet(OtherClass, 'others');
-builder.EntitySet(Alma, 'almak')
-    .CustomAction('AlmaScopedAction', 'GET', Alma, Alma);
 
-builder.CustomAction('GlobalAction', 'GET', Object, Object);
+builder.CustomAction('GetBodyLengthFromJson', 'POST', Object, Object);
+
+builder.EntityType(OtherClass)
+    .CustomAction('OtherClassTypeBoundAction', 'POST', OtherClass, OtherClass);
+
+builder.EntitySet(Alma, 'almak')
+    .CustomAction('AlmaScopedAction', 'POST', Alma, Alma);
+
+/** Builder end, EndpointRoute Start... */
 
 const endpointRoute = new EndpointRoute(builder);
 
@@ -46,13 +50,23 @@ dataProvider.PostAsync({
     otherClass: null,
     otherKey: null,
 });
-endpointRoute.EntitySet(Alma, 'almak').SetDataProvider(dataProvider);
-
-builder.CustomAction('GetBodyLengthFromJson', 'POST', Object, Object);
+endpointRoute.EntitySet(Alma, 'almak')
+    .ImplementAction<Alma, Alma>('AlmaScopedAction', async (arg, req) => {
+        arg.a = arg.a + arg.a;
+        return arg;
+    })
+    .SetDataProvider(dataProvider);
 
 endpointRoute.ImplementAction<object, {JsonLength: number}>('GetBodyLengthFromJson', async (arg, req) => {
     return  { JsonLength: JSON.stringify(arg).length };
 });
+
+endpointRoute.EntityType(OtherClass)
+    .ImplementAction('OtherClassTypeBoundAction', async (arg, req) => {
+        return {Other: true};
+    });
+
+endpointRoute.EntitySet(Alma, 'almak');
 
 endpointRoute.RegisterRoutes(app);
 

@@ -55,13 +55,14 @@ export class EndpointTests {
         this.EndpointBuilder.EntityType(TestGuidClass);
         this.EndpointBuilder.EntitySet(TestGuidClass, this.testGuidCollectionName);
 
-        this.EndpointRoute = new EndpointRoute(this.ExpressApp, this.EndpointBuilder);
+        this.EndpointRoute = new EndpointRoute(this.EndpointBuilder);
         this.EndpointRoute.EntitySet(TestClass, this.testCollectionName)
             .SetDataProvider(this.testStore);
 
         this.EndpointRoute.EntitySet(TestGuidClass, this.testGuidCollectionName)
             .SetDataProvider(this.testGuidStore);
 
+        this.EndpointRoute.RegisterRoutes(this.ExpressApp);
     }
 
     @test('Endpoint route creation')
@@ -95,8 +96,8 @@ export class EndpointTests {
         this.EndpointBuilder.EntitySet(TestClass, 'testClassWithoutDataProvider');
 
         // Need to register it again...
-        this.EndpointRoute = new EndpointRoute(this.ExpressApp, this.EndpointBuilder);
-
+        this.EndpointRoute = new EndpointRoute(this.EndpointBuilder);
+        this.EndpointRoute.RegisterRoutes(this.ExpressApp);
         chai.request(this.ExpressApp)
             .get('/' + this.Route + '/testClassWithoutDataProvider')
             .then((res) => {

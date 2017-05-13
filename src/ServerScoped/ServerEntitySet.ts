@@ -23,6 +23,7 @@ export class ServerEntitySet<TBaseType, TPrimaryKey> extends ServerActionOwnerAb
             throw Error(`DataProvider for ${this.Name} was already set`);
         }
         this.dataProvider = provider;
+        return this;
     }
 
     public get DataProvider(): DataProviderBase<TBaseType, TPrimaryKey>{
