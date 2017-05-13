@@ -56,8 +56,12 @@ export class EndpointTests {
         this.EndpointBuilder.EntitySet(TestGuidClass, this.testGuidCollectionName);
 
         this.EndpointRoute = new EndpointRoute(this.ExpressApp, this.EndpointBuilder);
-        this.EndpointRoute.setDataProviderForEntitySet(this.testStore, this.testCollectionName);
-        this.EndpointRoute.setDataProviderForEntitySet(this.testGuidStore, this.testGuidCollectionName);
+        this.EndpointRoute.EntitySet(TestClass, this.testCollectionName)
+            .SetDataProvider(this.testStore);
+
+        this.EndpointRoute.EntitySet(TestGuidClass, this.testGuidCollectionName)
+            .SetDataProvider(this.testGuidStore);
+
     }
 
     @test('Endpoint route creation')
@@ -70,13 +74,6 @@ export class EndpointTests {
         this.ExpressApp.listen(3000, () => {
             done();
         });
-    }
-
-    @test('Set and Get DataStore should be the same')
-    public SetGetDataProvider() {
-        const dp = new InMemoryProvider(TestClass);
-        this.EndpointRoute.setDataProviderForEntitySet(dp, this.testCollectionName);
-        chai.expect(dp).to.be.eq(this.EndpointRoute.getDataProviderForEntitySet(this.testCollectionName));
     }
 
     @test('Check if $metadata is available')

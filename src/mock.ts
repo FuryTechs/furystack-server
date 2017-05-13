@@ -42,7 +42,7 @@ dataProvider.PostAsync({
     otherClass: null,
     otherKey: null,
 });
-endpointRoute.setDataProviderForEntitySet(dataProvider, 'almak');
+endpointRoute.EntitySet(Alma, 'almak').SetDataProvider(dataProvider);
 
 builder.CustomAction('Custom1', 'GET', String, Number);
 

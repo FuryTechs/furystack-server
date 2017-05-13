@@ -2,12 +2,10 @@ import * as BodyParser from 'body-parser';
 import * as Express from 'express';
 import { CollectionResult, CustomAction, EndpointBuilder,
     EndpointEntitySet, ModelDescriptorStore, ODataQuery } from 'furystack-core';
-import { DataProviderBase } from './';
 import { ServerActionOwnerAbstract, ServerEntitySet, ServerEntityType } from './ServerScoped';
 
 // tslint:disable-next-line:no-unused-expression
 type requestHandler = (entitySet: ServerEntitySet<any, any>,
-                       dataProvider: DataProviderBase<any, any>,
                        req: Express.Request,
                        resp: Express.Response) => void;
 
@@ -25,9 +23,6 @@ export class EndpointRoute extends ServerActionOwnerAbstract {
         const entityTypeName = ModelDescriptorStore.GetName(entityTypeClass);
         return this.entityTypes.find((t) => t.Name === entityTypeName);
     }
-
-    private dataProviderRefs: Array<DataProviderBase<any, any>> = [];
-
     private readonly entitySets: Array<ServerEntitySet<any, any>>;
     private readonly entityTypes: ServerEntityType[];
 
@@ -37,28 +32,6 @@ export class EndpointRoute extends ServerActionOwnerAbstract {
     public GetMetadataBody(): string {
         // ToDo: Figure out if it is possible to create a standard OData V4 $metadata XML
         return JSON.stringify(this.EndpointBuilder);
-    }
-
-    /**
-     * Sets a Data Provider instance to a specified Entity Set
-     * @param {DataProviderBase<any, any>} dataProvider The DataProvider instance to be set
-     * @param {string} entitySetName The name of the specified EntitySet
-     */
-    public setDataProviderForEntitySet(dataProvider: DataProviderBase<any, any>, entitySetName: string) {
-        this.dataProviderRefs[entitySetName] = dataProvider;
-    }
-
-    /**
-     * Gets the current provider to the entitySet
-     * @param {string} entitySetName The name of the entity set
-     * @returns {DataProviderBase} The Data Provider if set, undefined othervise
-     */
-    public getDataProviderForEntitySet(entitySetName: string): DataProviderBase<any, any> {
-        const dp = this.dataProviderRefs[entitySetName];
-        if (!dp) {
-            throw new Error(`No DataProvider specified for entitySet '${entitySetName}'`);
-        }
-        return dp;
     }
 
     private router: Express.Router = Express.Router();
@@ -75,7 +48,6 @@ export class EndpointRoute extends ServerActionOwnerAbstract {
     }
 
     private async handleGetCollection(entitySet: ServerEntitySet<any, any>,
-                                      dbProvider: DataProviderBase<any, any>,
                                       req: Express.Request,
                                       resp: Express.Response) {
 
@@ -87,19 +59,18 @@ export class EndpointRoute extends ServerActionOwnerAbstract {
         query.Skip = odataParams['$skip'];
         query.OrderBy = odataParams['$orderby'];
 
-        const collection = await dbProvider.GetCollectionAsync(query);
+        const collection = await entitySet.DataProvider.GetCollectionAsync(query);
         resp.status(200).send(collection);
         // ToDo: Check if this is a custom action
     }
 
     private async handleGetSingleEntity(entitySet: ServerEntitySet<any, any>,
-                                        dbProvider: DataProviderBase<any, any>,
                                         req: Express.Request,
                                         resp: Express.Response) {
         // ToDo: Check if req is custom function
         const odataParams = req.query;
         const id = EndpointRoute.GetEntityIdFromPath(req.path);
-        const entity = await dbProvider.GetSingleAsync(id);
+        const entity = await entitySet.DataProvider.GetSingleAsync(id);
         if (entity) {
             resp.status(200)
                 .send(entity);
@@ -111,49 +82,44 @@ export class EndpointRoute extends ServerActionOwnerAbstract {
     }
 
     private async handlePost(entitySet: ServerEntitySet<any, any>,
-                             dbProvider: DataProviderBase<any, any>,
                              req: Express.Request,
                              resp: Express.Response) {
         // ToDo: check if req is custom action
-        const created = await dbProvider.PostAsync(req.body);
+        const created = await entitySet.DataProvider.PostAsync(req.body);
         resp.status(200).send(created);
     }
 
     private async handlePut(entitySet: ServerEntitySet<any, any>,
-                            dbProvider: DataProviderBase<any, any>,
                             req: Express.Request,
                             resp: Express.Response) {
         const id = EndpointRoute.GetEntityIdFromPath(req.path);
-        const result = await dbProvider.PutAsync(id, req.body);
+        const result = await entitySet.DataProvider.PutAsync(id, req.body);
         resp.status(200).send(result);
     }
 
     private async handlePatch(entitySet: ServerEntitySet<any, any>,
-                              dbProvider: DataProviderBase<any, any>,
                               req: Express.Request,
                               resp: Express.Response) {
 
         const id = EndpointRoute.GetEntityIdFromPath(req.path);
-        const entity = await dbProvider.GetSingleAsync(id);
-        const result = await dbProvider.PatchAsync(id, req.body);
+        const entity = await entitySet.DataProvider.GetSingleAsync(id);
+        const result = await entitySet.DataProvider.PatchAsync(id, req.body);
         resp.status(200)
             .send(result);
     }
 
     private async handleDelete(entitySet: ServerEntitySet<any, any>,
-                               dbProvider: DataProviderBase<any, any>,
                                req: Express.Request,
                                resp: Express.Response) {
         const id = EndpointRoute.GetEntityIdFromPath(req.path);
-        const result = await dbProvider.Delete(id);
+        const result = await entitySet.DataProvider.Delete(id);
         resp.status(204).send({});
     }
 
     private async handleWrapper(handler: requestHandler,
                                 entitySet: ServerEntitySet<any, any>, req: Express.Request, resp: Express.Response) {
         try {
-            const dbProvider = this.getDataProviderForEntitySet(entitySet.Name);
-            await handler(entitySet, dbProvider, req, resp);
+            await handler(entitySet, req, resp);
         } catch (error) {
             resp.status(500)
                 .send({
