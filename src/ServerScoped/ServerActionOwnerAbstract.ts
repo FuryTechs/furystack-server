@@ -9,7 +9,7 @@ export abstract class ServerActionOwnerAbstract {
 
     public ImplementAction<TBody, TReturns>(
         actionName: string,
-        implementation: (arg: TBody, req: Express.Request) => TReturns) {
+        implementation: (arg: TBody, req: Express.Request) => Promise<TReturns>) {
             if (this.implementedActions.find((a) => a.Name === actionName)) {
                 throw Error(`Action ${actionName} has been already implemented`);
             }
@@ -19,7 +19,7 @@ export abstract class ServerActionOwnerAbstract {
             return this;
     }
 
-    public CallAction<TBody, TReturns>(actionName: string, body: TBody, req: Express.Request) {
-        return this.implementedActions.find((a) => a.Name === actionName).Call(body, req);
+    public async CallAction<TBody, TReturns>(actionName: string, body: TBody, req: Express.Request) {
+        return await this.implementedActions.find((a) => a.Name === actionName).CallAsync(body, req);
     }
 }

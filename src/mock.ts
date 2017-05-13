@@ -36,7 +36,7 @@ builder.EntitySet(Alma, 'almak')
 
 builder.CustomAction('GlobalAction', 'GET', Object, Object);
 
-const endpointRoute = new EndpointRoute(app, builder);
+const endpointRoute = new EndpointRoute(builder);
 
 const dataProvider = new InMemoryProvider(Alma);
 dataProvider.PostAsync({
@@ -48,10 +48,12 @@ dataProvider.PostAsync({
 });
 endpointRoute.EntitySet(Alma, 'almak').SetDataProvider(dataProvider);
 
-builder.CustomAction('Custom1', 'GET', String, Number);
+builder.CustomAction('GetBodyLengthFromJson', 'POST', Object, Object);
 
-endpointRoute.ImplementAction<string, number>('Custom1', (arg, req) => {
-    return arg.length;
+endpointRoute.ImplementAction<object, {JsonLength: number}>('GetBodyLengthFromJson', async (arg, req) => {
+    return  { JsonLength: JSON.stringify(arg).length };
 });
+
+endpointRoute.RegisterRoutes(app);
 
 app.listen(1111);

@@ -2,7 +2,7 @@ import * as BodyParser from 'body-parser';
 import * as Express from 'express';
 import { CollectionResult, CustomAction, EndpointBuilder,
     EndpointEntitySet, ModelDescriptorStore, ODataQuery } from 'furystack-core';
-import { ServerActionOwnerAbstract, ServerEntitySet, ServerEntityType } from './ServerScoped';
+import { ServerActionOwnerAbstract, ServerCustomAction, ServerEntitySet, ServerEntityType } from './ServerScoped';
 
 // tslint:disable-next-line:no-unused-expression
 type requestHandler = (entitySet: ServerEntitySet<any, any>,
@@ -67,7 +67,6 @@ export class EndpointRoute extends ServerActionOwnerAbstract {
     private async handleGetSingleEntity(entitySet: ServerEntitySet<any, any>,
                                         req: Express.Request,
                                         resp: Express.Response) {
-        // ToDo: Check if req is custom function
         const odataParams = req.query;
         const id = EndpointRoute.GetEntityIdFromPath(req.path);
         const entity = await entitySet.DataProvider.GetSingleAsync(id);
@@ -84,7 +83,6 @@ export class EndpointRoute extends ServerActionOwnerAbstract {
     private async handlePost(entitySet: ServerEntitySet<any, any>,
                              req: Express.Request,
                              resp: Express.Response) {
-        // ToDo: check if req is custom action
         const created = await entitySet.DataProvider.PostAsync(req.body);
         resp.status(200).send(created);
     }
@@ -130,7 +128,7 @@ export class EndpointRoute extends ServerActionOwnerAbstract {
         }
     }
 
-    private registerCollections() {
+    private registerEntitySets() {
         this.entitySets.forEach((entitySet) => {
             this.router.get([`/${entitySet.Name}`, `/${entitySet.Name}/*`], async (req, resp) =>
                 this.handleWrapper(this.handleGetCollection, entitySet, req, resp));
@@ -152,6 +150,43 @@ export class EndpointRoute extends ServerActionOwnerAbstract {
         });
     }
 
+    private registerActionTo<TBody, TReturns>(action: ServerCustomAction<TBody, TReturns>, path: string) {
+        const fullPath = `${path}${action.Name}`;
+        const evaluate = async (req, resp) => {
+            try {
+                const response = await action.CallAsync(req.body, req);
+                resp.status(200).send(response);
+            } catch (error) {
+                resp.status(500).send({
+                    error,
+                    message: `Error happened during evaluation CustomAction '${action.Name}'`,
+                });
+            }
+        };
+        switch (action.RequestType) {
+                case 'GET':
+                    this.router.get(fullPath, evaluate);
+                    break;
+                case 'POST':
+                    this.router.post(fullPath, evaluate);
+                    break;
+                case 'PUT':
+                    this.router.put(fullPath, evaluate);
+                    break;
+                case 'PATCH':
+                    this.router.patch(fullPath, evaluate);
+                case 'DELETE':
+                    this.router.delete(fullPath, evaluate);
+                default:
+                    break;
+            }
+    }
+    private registerGlobalActions(): void {
+        this.implementedActions.forEach((action) => {
+            this.registerActionTo(action, '/');
+        });
+    }
+
     private registerExpressRoute(expressAppRef: Express.Application) {
 
         this.router.get('/([\$])metadata', (req, resp) => {
@@ -161,7 +196,8 @@ export class EndpointRoute extends ServerActionOwnerAbstract {
                 .send(this.GetMetadataBody());
         });
 
-        this.registerCollections();
+        this.registerEntitySets();
+        this.registerGlobalActions();
 
         expressAppRef.use(`/${this.EndpointBuilder.NameSpaceRoot}`, this.router);
 
@@ -175,7 +211,7 @@ export class EndpointRoute extends ServerActionOwnerAbstract {
      * @param ModelBuilder The OData modelbuilder which defines what entities will be registered into the endpoint
      * @constructs EndpointRoute
      */
-    constructor(expressAppRef: Express.Application, protected EndpointBuilder: EndpointBuilder) {
+    constructor(protected EndpointBuilder: EndpointBuilder) {
         super();
         this.entitySets = EndpointBuilder.GetAllEntitySets().map((s) =>
             new ServerEntitySet(s,
@@ -183,6 +219,9 @@ export class EndpointRoute extends ServerActionOwnerAbstract {
                 // tslint:disable-next-line:max-line-length
                 s.EndpointEntityType.ModelDescriptor.Object[s.EndpointEntityType.ModelDescriptor.PrimaryKey.PrimaryKey] ));
         this.entityTypes = EndpointBuilder.GetAllEntityTypes().map((s) => new ServerEntityType(s));
+    }
+
+    public RegisterRoutes(expressAppRef: Express.Application) {
         expressAppRef.use(BodyParser.json());
         this.registerExpressRoute(expressAppRef);
     }
