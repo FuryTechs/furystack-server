@@ -50,7 +50,7 @@ dataProvider.PostAsync({
     otherClass: null,
     otherKey: null,
 });
-endpointRoute.EntitySet(Alma, 'almak')
+endpointRoute.EntitySet(Alma)
     .ImplementAction<Alma, Alma>('AlmaScopedAction', async (arg, req) => {
         arg.a = arg.a + arg.a;
         return arg;
@@ -65,8 +65,6 @@ endpointRoute.EntityType(OtherClass)
     .ImplementAction('OtherClassTypeBoundAction', async (arg, req) => {
         return {Other: true};
     });
-
-endpointRoute.EntitySet(Alma, 'almak');
 
 endpointRoute.RegisterRoutes(app);
 

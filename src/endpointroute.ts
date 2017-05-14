@@ -15,8 +15,9 @@ export class EndpointRoute extends ServerActionOwnerAbstract {
     }
 
     public EntitySet<T, K = any>(entityTypeClass: { new (): T },
-                                 entitySetName: string): ServerEntitySet<T, K> {
-        return this.entitySets.find((s) => s.Name === entitySetName);
+                                 entitySetName?: string): ServerEntitySet<T, K> {
+        return this.entitySets.find((s) => entitySetName && s.Name === entitySetName)
+            || this.entitySets.find((s) => s.EndpointEntityType.Name === ModelDescriptorStore.GetName(entityTypeClass));
     }
 
     public EntityType<T>(entityTypeClass: {new(): T}): ServerEntityType {
