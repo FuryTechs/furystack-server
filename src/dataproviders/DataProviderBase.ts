@@ -11,6 +11,12 @@ export abstract class DataProviderBase<EntityType, PrimaryKeyType>{
     public abstract async GetSingleAsync<K extends keyof EntityType>(
         get: PrimaryKeyType):
         Promise<EntityType>;
+
+    public abstract async GetSinglePartialAsync<K extends keyof EntityType>(
+        get: PrimaryKeyType,
+        fields: Array<keyof EntityType>):
+        Promise<Partial<EntityType>>;
+
     public abstract async GetCollectionAsync<K extends keyof EntityType>(
         query?: ODataQuery<EntityType, K>):
         Promise<CollectionResult<EntityType>>;

@@ -68,9 +68,10 @@ export class EndpointRoute extends ServerActionOwnerAbstract {
         const query = new ODataQuery<any, string>();
 
         // tslint:disable:no-string-literal
-        query.Top = odataParams['$top'];
-        query.Skip = odataParams['$skip'];
-        query.OrderBy = odataParams['$orderby'];
+        query.Select = odataParams['$select'] && odataParams['$select'].split(',');
+        query.Top = parseInt(odataParams['$top'], 0);
+        query.Skip = parseInt(odataParams['$skip'], 0);
+        query.OrderBy = odataParams['$orderby'] && odataParams['$orderby'].split(',');
 
         const collection = await entitySet.DataProvider.GetCollectionAsync(query);
         resp.status(200).send(collection);
@@ -82,7 +83,10 @@ export class EndpointRoute extends ServerActionOwnerAbstract {
                                         resp: Express.Response) {
         const odataParams = req.query;
         const id = EndpointRoute.GetEntityIdFromPath(req.path);
-        const entity = await entitySet.DataProvider.GetSingleAsync(id);
+        const select = odataParams['$select'] && odataParams['$select'].split(',');
+
+        const entity = select ? await entitySet.DataProvider.GetSinglePartialAsync(id, select)
+                            : await entitySet.DataProvider.GetSingleAsync(id);
         if (entity) {
             resp.status(200)
                 .send(entity);

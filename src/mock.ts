@@ -44,9 +44,25 @@ const endpointRoute = new EndpointRoute(builder);
 
 const dataProvider = new InMemoryProvider(Alma);
 dataProvider.PostAsync({
-    a: null,
-    b: null,
+    a: 'AProperty',
+    b: 'BProperty',
     id: 1,
+    otherClass: null,
+    otherKey: null,
+});
+
+dataProvider.PostAsync({
+    a: 'AProperty2',
+    b: 'BProperty2',
+    id: 2,
+    otherClass: null,
+    otherKey: null,
+});
+
+dataProvider.PostAsync({
+    a: 'AProperty3',
+    b: 'BProperty3',
+    id: 3,
     otherClass: null,
     otherKey: null,
 });
