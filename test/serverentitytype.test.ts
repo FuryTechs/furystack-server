@@ -26,4 +26,13 @@ export class ServerEntityTypeTest {
             return 1;
         });
     }
+
+    @test('getModelDescriptor should return descriptor')
+    public getModelDescriptor() {
+        const descriptor = ModelDescriptorStore.GetDescriptor(EntityTypeTestClass);
+        const et = new EndpointEntityType('TestClass', descriptor);
+        const entityType = new ServerEntityType(et);
+
+        chai.expect(entityType.ModelDescriptor).to.be.eq(descriptor);
+    }
 }
