@@ -2,9 +2,8 @@ import { CustomAction } from 'furystack-core';
 
 export class ServerCustomAction<TBody, TReturns> extends CustomAction<TBody, TReturns> {
     constructor(t: CustomAction<TBody, TReturns>,
-                implementation: (argument: TBody, req: Express.Request) => Promise<TReturns>) {
+                private readonly innerAction: (argument: TBody, req: Express.Request) => Promise<TReturns>) {
         super(t.Name, t.RequestType, t.BodyType, t.ReturnsType);
-        this.innerAction = implementation;
     }
 
     public async CallAsync(argument: TBody, req: Express.Request): Promise<TReturns> {
@@ -13,6 +12,4 @@ export class ServerCustomAction<TBody, TReturns> extends CustomAction<TBody, TRe
         }
         return await this.innerAction(argument, req);
     }
-
-    private readonly innerAction: (argument: TBody, req: Express.Request) => Promise<TReturns>;
 }
