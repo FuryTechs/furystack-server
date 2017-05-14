@@ -7,9 +7,6 @@ export class ServerCustomAction<TBody, TReturns> extends CustomAction<TBody, TRe
     }
 
     public async CallAsync(argument: TBody, req: Express.Request): Promise<TReturns> {
-        if (this.innerAction == null) {
-            throw Error('Action not implemented!');
-        }
         return await this.innerAction(argument, req);
     }
 }
