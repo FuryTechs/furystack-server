@@ -16,8 +16,20 @@ export class EndpointRoute extends ServerActionOwnerAbstract {
 
     public EntitySet<T, K = any>(entityTypeClass: { new (): T },
                                  entitySetName?: string): ServerEntitySet<T, K> {
-        return this.entitySets.find((s) => entitySetName && s.Name === entitySetName)
-            || this.entitySets.find((s) => s.EndpointEntityType.Name === ModelDescriptorStore.GetName(entityTypeClass));
+        if (!entitySetName) {
+            const found = this.entitySets.filter((s) =>
+                s.EndpointEntityType.Name === ModelDescriptorStore.GetName(entityTypeClass));
+            if (found.length === 1) {
+                return found[0];
+            } else {
+                throw Error(`Cannot get EntitySet for type ${entityTypeClass.name}, found ${found.length} sets. Please specify the collection name.`);
+            }
+        }
+        const found = this.entitySets.filter((s) => entitySetName && s.Name === entitySetName);
+        if (found.length === 1) {
+            return found[0];
+        }
+        throw Error(`Cannot get EntitySet for type ${entitySetName}, found ${found.length} sets. Please specify the collection name.`);
     }
 
     public EntityType<T>(entityTypeClass: {new(): T}): ServerEntityType {

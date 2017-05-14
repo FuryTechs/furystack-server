@@ -5,6 +5,7 @@ import { suite, test } from 'mocha-typescript';
 import { EndpointRoute } from '../src/endpointroute';
 import chaiHttp = require('chai-http');
 import { DataProviderBase, InMemoryProvider } from '../src/index';
+import { ServerCustomAction } from '../src/ServerScoped/index';
 
 class TestClass {
     @PrimaryKey
@@ -295,5 +296,62 @@ export class EndpointTests {
                     done();
                 }, done);
             }).catch(done);
+    }
+
+    @test('ImplementAction should implement a correct action')
+    public async ImplementAction() {
+        const builder = new EndpointBuilder('api');
+        builder.CustomAction('CustomAction', 'GET', TestClass, TestClass);
+        const route = new EndpointRoute(builder);
+        let actionCalled = false;
+
+        route.ImplementAction('CustomAction', async (arg, req) => {
+            actionCalled = true;
+            return new TestClass();
+        });
+
+        await route.CallAction('CustomAction', new TestClass(), null);
+        chai.expect(actionCalled).to.be.eq(true);
+    }
+
+    @test('Should be able to get EntitySet with name')
+    public async GetEntitySetWithName() {
+        const builder = new EndpointBuilder('api');
+        builder.EntitySet(TestClass, 'tests');
+        const route = new EndpointRoute(builder);
+        const serverSet = route.EntitySet(TestClass, 'tests');
+        chai.expect(serverSet.Name).to.be.eq('tests');
+    }
+
+    @test('Should throw error if no entitySet found by name')
+    public async GetThrowIfNotFoundByEntitySetName() {
+        const builder = new EndpointBuilder('api');
+        builder.EntitySet(TestClass, 'tests');
+        const route = new EndpointRoute(builder);
+
+        chai.expect(() => {
+            route.EntitySet(TestClass, 'tests2');
+        }).to.throw();
+    }
+
+    @test('Should be able to get EntitySet without name')
+    public async GetEntitySetWithoutName() {
+        const builder = new EndpointBuilder('api');
+        builder.EntitySet(TestClass, 'tests');
+        const route = new EndpointRoute(builder);
+        const serverSet = route.EntitySet(TestClass);
+        chai.expect(serverSet.Name).to.be.eq('tests');
+    }
+
+    @test('Getting EntitySet without name should throw if found multiple or not found.')
+    public async GetWithoutNameShouldThworIfAmbligous() {
+        const builder = new EndpointBuilder('api');
+        builder.EntitySet(TestClass, 'tests');
+        builder.EntitySet(TestClass, 'tests2');
+        const route = new EndpointRoute(builder);
+
+        chai.expect(() => {
+            const serverSet = route.EntitySet(TestClass);
+        }).to.throw();
     }
 }
