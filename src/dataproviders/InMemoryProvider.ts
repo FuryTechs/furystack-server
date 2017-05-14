@@ -1,4 +1,5 @@
 import { CollectionResult, ODataQuery } from 'furystack-core';
+import * as _ from 'lodash';
 import { DataProviderBase } from './DataProviderBase';
 
 export class InMemoryProvider<EntityType, PrimaryKeyType, Fields> extends DataProviderBase<EntityType, PrimaryKeyType> {
@@ -12,7 +13,34 @@ export class InMemoryProvider<EntityType, PrimaryKeyType, Fields> extends DataPr
     public async GetCollectionAsync(q?: ODataQuery<EntityType, Fields>): Promise<CollectionResult<EntityType>> {
 
         // ToDo: Perform filter operations
-        return new CollectionResult(this.Entities, this.Entities.length);
+        let returnedEntities = this.Entities as Array<Partial<EntityType>>;
+
+        // ToDO: TESTS
+        if (q) {
+            if (q.OrderBy) {
+                returnedEntities = _.orderBy(returnedEntities, q.OrderBy);
+            }
+            if (q.Skip) {
+                returnedEntities = returnedEntities.slice(q.Skip);
+            }
+            if (q.Top) {
+                returnedEntities = returnedEntities.slice(0, q.Top);
+            }
+            if (q.Select) {
+                const selectString = q.Select.map((a) => a.toString());
+                returnedEntities = returnedEntities.map((e) => {
+                    const filtered = {} as Partial<EntityType>;
+                    for (const prop in e) {
+                        if (selectString.indexOf(prop) > -1) {
+                            filtered[prop] = e[prop];
+                        }
+                    }
+                    return filtered;
+                });
+            }
+        }
+
+        return new CollectionResult(returnedEntities, this.Entities.length);
     }
     public async PostAsync(entity: EntityType): Promise<EntityType> {
         if (this.Entities.find((a) =>
