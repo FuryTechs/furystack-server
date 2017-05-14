@@ -354,4 +354,16 @@ export class EndpointTests {
             const serverSet = route.EntitySet(TestClass);
         }).to.throw();
     }
+
+    @test('Getting EntitySet without name should throw if found multiple or not found.')
+    public async GetEntityTypeTest() {
+        const builder = new EndpointBuilder('api');
+        builder.EntitySet(TestClass, 'tests');
+        builder.EntitySet(TestClass, 'tests2');
+        const route = new EndpointRoute(builder);
+
+        const entityType = route.EntityType(TestClass);
+
+        chai.expect(entityType.Name).to.be.eq('TestClass');
+    }
 }
