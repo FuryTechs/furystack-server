@@ -10,6 +10,7 @@
         "sourceMap": true,
         "inlineSources": true
     }, 
+    "strict": true,
     "files": [
         "./src/index.ts"
     ]

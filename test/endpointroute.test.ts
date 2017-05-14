@@ -5,6 +5,7 @@ import { suite, test } from 'mocha-typescript';
 import { EndpointRoute } from '../src/endpointroute';
 import chaiHttp = require('chai-http');
 import { DataProviderBase, InMemoryProvider } from '../src/index';
+import { ServerCustomAction } from '../src/ServerScoped/index';
 
 class TestClass {
     @PrimaryKey
@@ -55,9 +56,14 @@ export class EndpointTests {
         this.EndpointBuilder.EntityType(TestGuidClass);
         this.EndpointBuilder.EntitySet(TestGuidClass, this.testGuidCollectionName);
 
-        this.EndpointRoute = new EndpointRoute(this.ExpressApp, this.EndpointBuilder);
-        this.EndpointRoute.setDataProviderForEntitySet(this.testStore, this.testCollectionName);
-        this.EndpointRoute.setDataProviderForEntitySet(this.testGuidStore, this.testGuidCollectionName);
+        this.EndpointRoute = new EndpointRoute(this.EndpointBuilder);
+        this.EndpointRoute.EntitySet(TestClass, this.testCollectionName)
+            .SetDataProvider(this.testStore);
+
+        this.EndpointRoute.EntitySet(TestGuidClass, this.testGuidCollectionName)
+            .SetDataProvider(this.testGuidStore);
+
+        this.EndpointRoute.RegisterRoutes(this.ExpressApp);
     }
 
     @test('Endpoint route creation')
@@ -70,13 +76,6 @@ export class EndpointTests {
         this.ExpressApp.listen(3000, () => {
             done();
         });
-    }
-
-    @test('Set and Get DataStore should be the same')
-    public SetGetDataProvider() {
-        const dp = new InMemoryProvider(TestClass);
-        this.EndpointRoute.setDataProviderForEntitySet(dp, this.testCollectionName);
-        chai.expect(dp).to.be.eq(this.EndpointRoute.getDataProviderForEntitySet(this.testCollectionName));
     }
 
     @test('Check if $metadata is available')
@@ -98,8 +97,8 @@ export class EndpointTests {
         this.EndpointBuilder.EntitySet(TestClass, 'testClassWithoutDataProvider');
 
         // Need to register it again...
-        this.EndpointRoute = new EndpointRoute(this.ExpressApp, this.EndpointBuilder);
-
+        this.EndpointRoute = new EndpointRoute(this.EndpointBuilder);
+        this.EndpointRoute.RegisterRoutes(this.ExpressApp);
         chai.request(this.ExpressApp)
             .get('/' + this.Route + '/testClassWithoutDataProvider')
             .then((res) => {
@@ -297,5 +296,222 @@ export class EndpointTests {
                     done();
                 }, done);
             }).catch(done);
+    }
+
+    @test('ImplementAction should implement a correct action')
+    public async ImplementAction() {
+        const builder = new EndpointBuilder('api');
+        builder.CustomAction('CustomAction', 'GET', TestClass, TestClass);
+        const route = new EndpointRoute(builder);
+        let actionCalled = false;
+
+        route.ImplementAction('CustomAction', async (arg, req) => {
+            actionCalled = true;
+            return new TestClass();
+        });
+
+        await route.CallAction('CustomAction', new TestClass(), null);
+        chai.expect(actionCalled).to.be.eq(true);
+    }
+
+    @test('Should be able to get EntitySet with name')
+    public async GetEntitySetWithName() {
+        const builder = new EndpointBuilder('api');
+        builder.EntitySet(TestClass, 'tests');
+        const route = new EndpointRoute(builder);
+        const serverSet = route.EntitySet(TestClass, 'tests');
+        chai.expect(serverSet.Name).to.be.eq('tests');
+    }
+
+    @test('Should throw error if no entitySet found by name')
+    public async GetThrowIfNotFoundByEntitySetName() {
+        const builder = new EndpointBuilder('api');
+        builder.EntitySet(TestClass, 'tests');
+        const route = new EndpointRoute(builder);
+
+        chai.expect(() => {
+            route.EntitySet(TestClass, 'tests2');
+        }).to.throw();
+    }
+
+    @test('Should be able to get EntitySet without name')
+    public async GetEntitySetWithoutName() {
+        const builder = new EndpointBuilder('api');
+        builder.EntitySet(TestClass, 'tests');
+        const route = new EndpointRoute(builder);
+        const serverSet = route.EntitySet(TestClass);
+        chai.expect(serverSet.Name).to.be.eq('tests');
+    }
+
+    @test('Getting EntitySet without name should throw if found multiple or not found.')
+    public async GetWithoutNameShouldThworIfAmbligous() {
+        const builder = new EndpointBuilder('api');
+        builder.EntitySet(TestClass, 'tests');
+        builder.EntitySet(TestClass, 'tests2');
+        const route = new EndpointRoute(builder);
+
+        chai.expect(() => {
+            const serverSet = route.EntitySet(TestClass);
+        }).to.throw();
+    }
+
+    @test('Getting EntitySet without name should throw if found multiple or not found.')
+    public async GetEntityTypeTest() {
+        const builder = new EndpointBuilder('api');
+        builder.EntitySet(TestClass, 'tests');
+        builder.EntitySet(TestClass, 'tests2');
+        const route = new EndpointRoute(builder);
+
+        const entityType = route.EntityType(TestClass);
+
+        chai.expect(entityType.Name).to.be.eq('TestClass');
+    }
+
+    @test('CustomGlobalActionTest')
+    public CustomGlobalActionTest(done) {
+        const builder = new EndpointBuilder('apiGlobalGet');
+        builder.CustomAction('CustomAction', 'GET', TestClass, TestClass);
+        const route = new EndpointRoute(builder);
+        route.ImplementAction('CustomAction', async (req, resp) => {
+            const t = new TestClass();
+            t.Value = 'FromCustomAction';
+            return t;
+        });
+        route.RegisterRoutes(this.ExpressApp);
+
+        chai.request(this.ExpressApp)
+            .get('/apiGlobalGet/CustomAction')
+            .then((res) => {
+                chai.expect(res.body.Value).to.be.eq('FromCustomAction');
+                done();
+            }).catch((err) => {
+                done(err);
+            });
+    }
+
+    @test('CustomCollectionlActionTest')
+    public CustomCollectionActionTest(done) {
+        const builder = new EndpointBuilder('ApiCollectionPost');
+        builder.EntitySet(TestClass, 'tests')
+            .CustomAction('CollectionAction', 'POST', TestClass, TestClass);
+
+        const route = new EndpointRoute(builder);
+        route.EntitySet(TestClass)
+            .ImplementAction('CollectionAction', async (req, resp) => {
+            const t = new TestClass();
+            t.Value = 'FromCollectionAction';
+            return t;
+        });
+        route.RegisterRoutes(this.ExpressApp);
+
+        chai.request(this.ExpressApp)
+            .post('/ApiCollectionPost/tests/CollectionAction')
+            .then((res) => {
+                chai.expect(res.body.Value).to.be.eq('FromCollectionAction');
+                done();
+            }).catch((err) => {
+                done(err);
+            });
+    }
+
+    @test('CustomEntityTypeActionTest')
+    public CustomEntityTypeActionTest(done) {
+        const builder = new EndpointBuilder('ApiTypeActionPut');
+        builder.EntitySet(TestClass, 'tests');
+        builder.EntityType(TestClass)
+            .CustomAction('EntityTypeAction', 'PUT', TestClass, TestClass);
+
+        const route = new EndpointRoute(builder);
+        route.EntityType(TestClass)
+            .ImplementAction('EntityTypeAction', async (req, resp) => {
+            const t = new TestClass();
+            t.Value = 'FromType';
+            return t;
+        });
+        route.RegisterRoutes(this.ExpressApp);
+
+        chai.request(this.ExpressApp)
+            .put('/ApiTypeActionPut/tests(1)/EntityTypeAction')
+            .then((res) => {
+                chai.expect(res.body.Value).to.be.eq('FromType');
+                done();
+            }).catch((err) => {
+                done(err);
+            });
+    }
+
+    @test('CustomEntityTypePatchActionTest')
+    public CustomEntityTypePatchActionTest(done) {
+        const builder = new EndpointBuilder('ApiTypeActionPut');
+        builder.EntitySet(TestClass, 'tests');
+        builder.EntityType(TestClass)
+            .CustomAction('EntityTypeAction', 'PATCH', TestClass, TestClass);
+
+        const route = new EndpointRoute(builder);
+        route.EntityType(TestClass)
+            .ImplementAction('EntityTypeAction', async (req, resp) => {
+            const t = new TestClass();
+            t.Value = 'FromType';
+            return t;
+        });
+        route.RegisterRoutes(this.ExpressApp);
+
+        chai.request(this.ExpressApp)
+            .patch('/ApiTypeActionPut/tests(1)/EntityTypeAction')
+            .then((res) => {
+                chai.expect(res.body.Value).to.be.eq('FromType');
+                done();
+            }).catch((err) => {
+                done(err);
+            });
+    }
+
+    @test('CustomEntityTypeDeleteActionTest')
+    public CustomEntityTypeDeleteActionTest(done) {
+        const builder = new EndpointBuilder('ApiTypeActionPut');
+        builder.EntitySet(TestClass, 'tests');
+        builder.EntityType(TestClass)
+            .CustomAction('EntityTypeAction', 'DELETE', TestClass, TestClass);
+
+        const route = new EndpointRoute(builder);
+        route.EntityType(TestClass)
+            .ImplementAction('EntityTypeAction', async (req, resp) => {
+            const t = new TestClass();
+            t.Value = 'FromType';
+            return t;
+        });
+        route.RegisterRoutes(this.ExpressApp);
+
+        chai.request(this.ExpressApp)
+            .del('/ApiTypeActionPut/tests(1)/EntityTypeAction')
+            .then((res) => {
+                chai.expect(res.body.Value).to.be.eq('FromType');
+                done();
+            }).catch((err) => {
+                done(err);
+            });
+    }
+
+    @test('CustomEntityTypeActionErrorTest')
+    public CustomEntityTypeActionErrorTest(done) {
+        const builder = new EndpointBuilder('ApiTypeActionPut');
+        builder.EntitySet(TestClass, 'tests');
+        builder.EntityType(TestClass)
+            .CustomAction('EntityTypeAction', 'GET', TestClass, TestClass);
+
+        const route = new EndpointRoute(builder);
+        route.EntityType(TestClass)
+            .ImplementAction('EntityTypeAction', async (req, resp) => {
+                throw Error('Noooooo (by: Mark Hamil)');
+            });
+        route.RegisterRoutes(this.ExpressApp);
+
+        chai.request(this.ExpressApp)
+            .get('/ApiTypeActionPut/tests(1)/EntityTypeAction')
+            .then((res) => {
+                done('An error was expected here, but request succeeded.');
+            }).catch((err) => {
+                done();
+            });
     }
 }

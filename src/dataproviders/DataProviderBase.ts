@@ -1,4 +1,3 @@
-import { } from 'furystack-core';
 import { CollectionResult, ModelDescriptor, ModelDescriptorStore, ODataQuery } from 'furystack-core';
 
 export abstract class DataProviderBase<EntityType, PrimaryKeyType>{
