@@ -5,9 +5,6 @@ import { ServerActionOwnerAbstract, ServerCustomAction } from '../src/ServerScop
 import { TestHelpers } from './';
 
 class TestClass {
-    constructor() {
-        //
-    }
 }
 
 class ImplementedActionOwner extends ServerActionOwnerAbstract {
@@ -51,5 +48,19 @@ export class ServerActionOwnerAbstractTest {
         };
         implementFunc();
         chai.expect(implementFunc).to.be.throw();
+    }
+
+    @test('ExecAsync')
+    public async ExecAsync() {
+        const actionOwner = new ImplementedActionOwner();
+        let hasRun = false;
+
+        actionOwner.ImplementAction<TestClass, TestClass>('testCustomAction', async (arg, req) => {
+            hasRun = true;
+            return new TestClass();
+        });
+
+        await actionOwner.CallAction('testCustomAction', new TestClass(), null);
+        chai.expect(hasRun).to.be.eq(true);
     }
 }
