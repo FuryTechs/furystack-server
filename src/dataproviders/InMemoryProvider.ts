@@ -7,7 +7,7 @@ export class InMemoryProvider<EntityType, PrimaryKeyType, Fields> extends DataPr
     private Entities: EntityType[] = [];
 
     private select(entity: EntityType, fields: Array<keyof EntityType>): Partial<EntityType> {
-        const filtered = {} as Partial<EntityType>;
+        const filtered: Partial<EntityType> = {};
         for (const prop in entity) {
             if (fields.indexOf(prop) > -1) {
                 filtered[prop] = entity[prop];
@@ -27,7 +27,7 @@ export class InMemoryProvider<EntityType, PrimaryKeyType, Fields> extends DataPr
         return this.select(found, fields);
     }
 
-    public async GetCollectionAsync(q?: ODataQuery<EntityType, Fields>): Promise<CollectionResult< EntityType>> {
+    public async GetCollectionAsync<K extends keyof EntityType>(q?: ODataQuery<EntityType, K>): Promise<CollectionResult< EntityType>> {
 
         // ToDo: Perform filter operations
         let returnedEntities = this.Entities as Array<Partial<EntityType>>;
