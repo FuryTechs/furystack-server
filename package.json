@@ -38,7 +38,7 @@
     "chai-http": "^3.0.0",
     "codecov": "^2.1.0",
     "istanbul": "^0.4.5",
-    "mocha": "^3.3.0",
+    "mocha": "^4.0.1",
     "mocha-typescript": "^1.1.2",
     "nyc": "11.2.1",
     "tslint": "^5.1.0",
