@@ -1,6 +1,6 @@
 {
   "name": "furystack-server",
-  "version": "1.0.0-alpha-4",
+  "version": "1.0.0-alpha-8",
   "description": "FuryStack framework, Server implementation",
   "main": "dist/index.js",
   "types": "dist/index.d.ts",
