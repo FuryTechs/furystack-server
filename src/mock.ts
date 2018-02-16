@@ -1,10 +1,10 @@
-import * as Express from 'express';
-import { EndpointBuilder, ForeignKey, PrimaryKey, Property } from 'furystack-core';
-import { InMemoryProvider } from './dataproviders';
-import { EndpointRoute } from './endpointroute';
+import * as Express from "express";
+import { EndpointBuilder, ForeignKey, PrimaryKey, Property } from "furystack-core";
+import { InMemoryProvider } from "./dataproviders";
+import { EndpointRoute } from "./endpointroute";
 const app = Express();
 
-const builder = new EndpointBuilder('Api');
+const builder = new EndpointBuilder("Api");
 
 class OtherClass {
     @PrimaryKey
@@ -22,21 +22,21 @@ class Alma {
     public b: string;
 
     public otherKey: number;
-    @ForeignKey(OtherClass, 'otherKey')
+    @ForeignKey(OtherClass, "otherKey")
     public otherClass: OtherClass;
 }
 
 builder.EntityType(Alma);
 builder.EntityType(OtherClass);
-builder.EntitySet(OtherClass, 'others');
+builder.EntitySet(OtherClass, "others");
 
-builder.CustomAction('GetBodyLengthFromJson', 'POST', Object, Object);
+builder.CustomAction("GetBodyLengthFromJson", "POST", Object, Object);
 
 builder.EntityType(OtherClass)
-    .CustomAction('OtherClassTypeBoundAction', 'POST', OtherClass, OtherClass);
+    .CustomAction("OtherClassTypeBoundAction", "POST", OtherClass, OtherClass);
 
-builder.EntitySet(Alma, 'almak')
-    .CustomAction('AlmaScopedAction', 'POST', Alma, Alma);
+builder.EntitySet(Alma, "almak")
+    .CustomAction("AlmaScopedAction", "POST", Alma, Alma);
 
 /** Builder end, EndpointRoute Start... */
 
@@ -44,41 +44,41 @@ const endpointRoute = new EndpointRoute(builder);
 
 const dataProvider = new InMemoryProvider(Alma);
 dataProvider.PostAsync({
-    a: 'AProperty',
-    b: 'BProperty',
+    a: "AProperty",
+    b: "BProperty",
     id: 1,
     otherClass: null,
     otherKey: null,
 });
 
 dataProvider.PostAsync({
-    a: 'AProperty2',
-    b: 'BProperty2',
+    a: "AProperty2",
+    b: "BProperty2",
     id: 2,
     otherClass: null,
     otherKey: null,
 });
 
 dataProvider.PostAsync({
-    a: 'AProperty3',
-    b: 'BProperty3',
+    a: "AProperty3",
+    b: "BProperty3",
     id: 3,
     otherClass: null,
     otherKey: null,
 });
 endpointRoute.EntitySet(Alma)
-    .ImplementAction<Alma, Alma>('AlmaScopedAction', async (arg, req) => {
+    .ImplementAction<Alma, Alma>("AlmaScopedAction", async (arg, req) => {
         arg.a = arg.a + arg.a;
         return arg;
     })
     .SetDataProvider(dataProvider);
 
-endpointRoute.ImplementAction<object, {JsonLength: number}>('GetBodyLengthFromJson', async (arg, req) => {
+endpointRoute.ImplementAction<object, {JsonLength: number}>("GetBodyLengthFromJson", async (arg, req) => {
     return  { JsonLength: JSON.stringify(arg).length };
 });
 
 endpointRoute.EntityType(OtherClass)
-    .ImplementAction('OtherClassTypeBoundAction', async (arg, req) => {
+    .ImplementAction("OtherClassTypeBoundAction", async (arg, req) => {
         return {Other: true};
     });
 

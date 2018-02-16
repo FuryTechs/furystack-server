@@ -1,24 +1,38 @@
 {
-    "extends": "tslint:latest",
+    "defaultSeverity": "error",
+    "extends": [
+        "tslint:recommended"
+    ],
+    "jsRules": {},
     "rules": {
-        "member-ordering": [
+        "member-ordering": false,
+        "object-literal-sort-keys": [
             false
+        ],        
+        "max-line-length": false,
+        "no-unused-expression": [
+            true,
+            "allow-fast-null-checks"
         ],
-        "quotemark": {
-            "options": "single",
-            "severity": "warning"
-        },
-        "max-classes-per-file": [
-            false
+        "variable-name": [
+            true,
+            "ban-keywords",
+            "check-format"
         ],
-        "max-line-length": [
-            false
+        "completed-docs": [
+            false,
+            {
+                "classes": { "visibilities": ["exported"] },
+                "enums": { "visibilities": ["exported"] },
+                "enum-members": { "visibilities": ["exported"] },
+                "functions": { "visibilities": ["exported"] },
+                "interfaces": { "visibilities": ["exported"] },
+                "properties": { "privacies": ["public", "protected"] },
+                "methods": { "privacies": ["public", "protected"], "tags": { "content": {}, "existence": ["inheritdoc"] } },
+                "types": { "visibilities": ["exported"] },
+                "variables": { "visibilities": ["exported"] }
+            }
         ]
     },
-    "jsRules": {
-        "no-require-imports": false,
-        "quotemark": {
-            "options": "single"
-        }
-    }
+    "rulesDirectory": []
 }

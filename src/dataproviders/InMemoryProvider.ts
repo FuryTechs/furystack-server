@@ -1,10 +1,10 @@
-import { CollectionResult, ODataQuery } from 'furystack-core';
-import * as _ from 'lodash';
-import { DataProviderBase } from './DataProviderBase';
+import { CollectionResult, ODataQuery } from "furystack-core";
+import * as _ from "lodash";
+import { DataProviderBase } from "./DataProviderBase";
 
 export class InMemoryProvider<EntityType, PrimaryKeyType, Fields> extends DataProviderBase<EntityType, PrimaryKeyType> {
 
-    private Entities: EntityType[] = [];
+    private entities: EntityType[] = [];
 
     private select(entity: EntityType, fields: Array<keyof EntityType>): Partial<EntityType> {
         const filtered: Partial<EntityType> = {};
@@ -17,8 +17,8 @@ export class InMemoryProvider<EntityType, PrimaryKeyType, Fields> extends DataPr
     }
 
     public async GetSingleAsync(key: PrimaryKeyType): Promise<EntityType> {
-        return this.Entities.find((a) =>
-            a[this.ModelDescriptor.PrimaryKey.PrimaryKey] as PrimaryKeyType === key);
+        return this.entities.find((a) =>
+            a[this.modelDescriptor.PrimaryKey.primaryKey] as PrimaryKeyType === key);
     }
 
     public async GetSinglePartialAsync(key: PrimaryKeyType, fields: Array<keyof EntityType>): Promise<Partial<EntityType>> {
@@ -30,33 +30,33 @@ export class InMemoryProvider<EntityType, PrimaryKeyType, Fields> extends DataPr
     public async GetCollectionAsync<K extends keyof EntityType>(q?: ODataQuery<EntityType, K>): Promise<CollectionResult< EntityType>> {
 
         // ToDo: Perform filter operations
-        let returnedEntities = this.Entities as Array<Partial<EntityType>>;
+        let returnedEntities = this.entities as Array<Partial<EntityType>>;
 
         // ToDO: TESTS
         if (q) {
-            if (q.OrderBy) {
-                returnedEntities = _.orderBy(returnedEntities, q.OrderBy);
+            if (q.orderBy) {
+                returnedEntities = _.orderBy(returnedEntities, q.orderBy);
             }
-            if (q.Skip) {
-                returnedEntities = returnedEntities.slice(q.Skip, returnedEntities.length);
+            if (q.skip) {
+                returnedEntities = returnedEntities.slice(q.skip, returnedEntities.length);
             }
-            if (q.Top) {
-                returnedEntities = returnedEntities.slice(0, q.Top);
+            if (q.top) {
+                returnedEntities = returnedEntities.slice(0, q.top);
             }
-            if (q.Select) {
-                const selectStrings = q.Select.map((a) => a.toString());
+            if (q.select) {
+                const selectStrings = q.select.map((a) => a.toString());
                 returnedEntities = returnedEntities.map((e) => this.select(e as EntityType, selectStrings as Array<keyof EntityType>));
             }
         }
 
-        return new CollectionResult(returnedEntities, this.Entities.length);
+        return new CollectionResult(returnedEntities, this.entities.length);
     }
     public async PostAsync(entity: EntityType): Promise<EntityType> {
-        if (this.Entities.find((a) =>
-            a[this.ModelDescriptor.PrimaryKey.PrimaryKey] === entity[this.ModelDescriptor.PrimaryKey.PrimaryKey])) {
-            throw new Error('Entity already exists!');
+        if (this.entities.find((a) =>
+            a[this.modelDescriptor.PrimaryKey.primaryKey] === entity[this.modelDescriptor.PrimaryKey.primaryKey])) {
+            throw new Error("Entity already exists!");
         }
-        this.Entities.push(entity);
+        this.entities.push(entity);
         return entity;
     }
     public async PatchAsync(primaryKey: PrimaryKeyType,
@@ -71,14 +71,14 @@ export class InMemoryProvider<EntityType, PrimaryKeyType, Fields> extends DataPr
     }
     public async PutAsync(primaryKey: PrimaryKeyType, entity: EntityType): Promise<EntityType> {
         const e = await this.GetSingleAsync(primaryKey);
-        const index = this.Entities.indexOf(e as EntityType);
-        this.Entities[index] = entity;
+        const index = this.entities.indexOf(e as EntityType);
+        this.entities[index] = entity;
         return entity;
     }
     public async Delete(primaryKey: PrimaryKeyType): Promise<any> {
         const e = await this.GetSingleAsync( primaryKey );
-        const index = this.Entities.indexOf(e as EntityType);
-        this.Entities.splice(index, 1);
+        const index = this.entities.indexOf(e as EntityType);
+        this.entities.splice(index, 1);
         return true;
     }
 

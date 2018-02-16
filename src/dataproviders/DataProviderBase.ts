@@ -1,11 +1,11 @@
-import { CollectionResult, ModelDescriptor, ModelDescriptorStore, ODataQuery } from 'furystack-core';
+import { CollectionResult, ModelDescriptor, ModelDescriptorStore, ODataQuery } from "furystack-core";
 
-export abstract class DataProviderBase<EntityType, PrimaryKeyType>{
+export abstract class DataProviderBase<EntityType, PrimaryKeyType> {
 
-    protected readonly ModelDescriptor: ModelDescriptor;
+    protected readonly modelDescriptor: ModelDescriptor;
 
     constructor(entityReference: { new (): EntityType }) {
-        this.ModelDescriptor = ModelDescriptorStore.GetDescriptor(entityReference);
+        this.modelDescriptor = ModelDescriptorStore.GetDescriptor(entityReference);
     }
 
     public abstract async GetSingleAsync<K extends keyof EntityType>(

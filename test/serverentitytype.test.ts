@@ -1,38 +1,35 @@
-import * as chai from 'chai';
-import { EndpointEntityType, ForeignKey, ModelDescriptorStore, PrimaryKey, Property } from 'furystack-core';
-import { suite, test } from 'mocha-typescript';
-import { ServerEntityType } from '../src/ServerScoped/index';
-import { TestHelpers } from './';
+import { expect } from "chai";
+import { EndpointEntityType, ForeignKey, ModelDescriptorStore, PrimaryKey, Property } from "furystack-core";
+import { ServerEntityType } from "../src/ServerScoped/index";
+import { TestHelpers } from "./";
+
+// tslint:disable:max-classes-per-file
 
 class EntityTypeTestClass {
     @Property
-    public Value: string;
+    public value: string;
 }
-@suite()
-export class ServerEntityTypeTest {
 
-    @test('Should be constructed')
-    public Construct() {
-        const et = new EndpointEntityType('TestClass', ModelDescriptorStore.GetDescriptor(EntityTypeTestClass));
+export const serverEntityTypeTests = describe("Server Entity Type", () => {
+    it("Should be constructed", () => {
+        const et = new EndpointEntityType("TestClass", ModelDescriptorStore.GetDescriptor(EntityTypeTestClass));
         const entityType = new ServerEntityType(et);
-    }
+    });
 
-    @test('Should be constructed')
-    public ImplementAction() {
-        const et = new EndpointEntityType('TestClass', ModelDescriptorStore.GetDescriptor(EntityTypeTestClass));
-        et.CustomAction('customAction', 'GET', Number, Number);
+    it("Action should be implemented", () => {
+        const et = new EndpointEntityType("TestClass", ModelDescriptorStore.GetDescriptor(EntityTypeTestClass));
+        et.CustomAction("customAction", "GET", Number, Number);
         const entityType = new ServerEntityType(et);
-        const action = entityType.ImplementAction('customAction', async (arg, req) => {
+        const action = entityType.ImplementAction("customAction", async (arg, req) => {
             return 1;
         });
-    }
+    });
 
-    @test('getModelDescriptor should return descriptor')
-    public getModelDescriptor() {
+    it("getModelDescriptor should return descriptor", () => {
         const descriptor = ModelDescriptorStore.GetDescriptor(EntityTypeTestClass);
-        const et = new EndpointEntityType('TestClass', descriptor);
+        const et = new EndpointEntityType("TestClass", descriptor);
         const entityType = new ServerEntityType(et);
 
-        chai.expect(entityType.ModelDescriptor).to.be.eq(descriptor);
-    }
-}
+        expect(entityType.ModelDescriptor).to.be.eq(descriptor);
+    });
+});

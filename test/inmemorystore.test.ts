@@ -1,140 +1,130 @@
-import * as chai from 'chai';
-import { ForeignKey, PrimaryKey } from 'furystack-core';
-import { suite, test } from 'mocha-typescript';
-import { InMemoryProvider } from '../src/dataproviders';
-import { TestHelpers } from './';
+import { expect } from "chai";
+import { ForeignKey, PrimaryKey } from "furystack-core";
+import { InMemoryProvider } from "../src/dataproviders";
+import { TestHelpers } from "./";
+
+// tslint:disable:max-classes-per-file
+
 class TestChild {
-    public Id: number;
-    public Value: string;
+    public id: number;
+    public value: string;
 }
 
 // tslint:disable-next-line:max-classes-per-file
 class TestClass {
     @PrimaryKey
-    public Id: number;
-    public Name: string;
-    public OtherValue?: string;
+    public id: number;
+    public name: string;
+    public otherValue?: string;
 
-    public ChildId?: number;
-    @ForeignKey(TestChild, 'ChildId')
-    public Child?: TestChild;
+    public childId?: number;
+    @ForeignKey(TestChild, "childId")
+    public child?: TestChild;
 }
 
-// tslint:disable-next-line:max-classes-per-file
-@suite('In Memory Store tests')
-export class InMemoryStoreTests {
-    private store: InMemoryProvider<TestClass, number, keyof TestClass>;
+describe("In Memory Store", () => {
 
-    public before() {
-        this.store = InMemoryProvider.CreateWithId(TestClass);
-    }
+    let store: InMemoryProvider<TestClass, number, keyof TestClass>;
+    beforeEach(() => {
+        store = InMemoryProvider.CreateWithId(TestClass);
+    });
 
-    @test('NotFound should return empty array')
-    public async NotFoundTest() {
-        const result = await this.store.GetSingleAsync(1);
-
+    it("NotFound should return empty array", async () => {
+        const result = await store.GetSingleAsync(1);
         chai.expect(result).equals(undefined);
-    }
+    });
 
-    @test('Test Store Post method')
-    public async Post() {
-
+    it("Test Store Post method", async () => {
         const name = TestHelpers.RandomString(3);
         const otherVal = TestHelpers.RandomString(3);
 
-        const postResult = await this.store.PostAsync({
-            Id: 1,
-            Name: name,
-            OtherValue: otherVal,
+        const postResult = await store.PostAsync({
+            id: 1,
+            name,
+            otherValue: otherVal,
         });
-        const reloaded = await this.store.GetSingleAsync(postResult.Id);
-        chai.expect(reloaded.Name).equals(name);
-        chai.expect(reloaded.OtherValue).equals(otherVal);
-    }
-
-    @test('Test POST and assert GetCollection length')
-    public async PostGetCollection() {
+        const reloaded = await store.GetSingleAsync(postResult.id);
+        chai.expect(reloaded.name).equals(name);
+        chai.expect(reloaded.otherValue).equals(otherVal);
+    });
+    it("Test POST and assert GetCollection length", async () => {
         const n1 = TestHelpers.RandomString(3);
         const n2 = TestHelpers.RandomString(3);
 
-        await this.store.PostAsync({ Id: 1, Name: n1 });
-        await this.store.PostAsync({ Id: 2, Name: n2 });
+        await store.PostAsync({ id: 1, name: n1 });
+        await store.PostAsync({ id: 2, name: n2 });
 
-        const result = await this.store.GetCollectionAsync();
+        const result = await store.GetCollectionAsync();
         chai.expect(result.value.length).equals(2);
-    }
+    });
 
-    @test('Test POST and Patch, expect that only the patched values will be changed')
-    public async PostPatchGetSingle() {
+    it("Test POST and Patch, expect that only the patched values will be changed", async () => {
         const id = 1;
         const n1 = TestHelpers.RandomString(3);
         const v1 = TestHelpers.RandomString(3);
 
         const v2 = TestHelpers.RandomString(3);
-        await this.store.PostAsync({ Id: id, Name: n1, OtherValue: v1 });
+        await store.PostAsync({ id, name: n1, otherValue: v1 });
 
-        const entity = await this.store.GetSingleAsync(id);
+        const entity = await store.GetSingleAsync(id);
 
-        chai.expect(entity.Name).equals(n1);
-        chai.expect(entity.OtherValue).equals(v1);
+        chai.expect(entity.name).equals(n1);
+        chai.expect(entity.otherValue).equals(v1);
 
-        await this.store.PatchAsync(id, { OtherValue: v2 });
+        await store.PatchAsync(id, { otherValue: v2 });
 
-        const reloaded = await this.store.GetSingleAsync(id);
+        const reloaded = await store.GetSingleAsync(id);
 
-        chai.expect(reloaded.Name).equals(n1);
-        chai.expect(reloaded.OtherValue).equals(v2);
-    }
+        chai.expect(reloaded.name).equals(n1);
+        chai.expect(reloaded.otherValue).equals(v2);
+    });
 
-    @test('Test POST and PUT, expect that the not provided property will be nulled')
-    public async PostPutGetSingle() {
+    it("Test POST and PUT, expect that the not provided property will be nulled", async () => {
         const id = 1;
         const n1 = TestHelpers.RandomString(3);
         const v1 = TestHelpers.RandomString(3);
 
         const n2 = TestHelpers.RandomString(3);
-        await this.store.PostAsync({ Id: id, Name: n1, OtherValue: v1 });
+        await store.PostAsync({ id, name: n1, otherValue: v1 });
 
-        const entity = await this.store.GetSingleAsync(id);
+        const entity = await store.GetSingleAsync(id);
 
-        chai.expect(entity.Name).equals(n1);
-        chai.expect(entity.OtherValue).equals(v1);
+        chai.expect(entity.name).equals(n1);
+        chai.expect(entity.otherValue).equals(v1);
 
-        await this.store.PutAsync(id, { Id: id, Name: n2 });
+        await store.PutAsync(id, { id, name: n2 });
 
-        const reloaded = await this.store.GetSingleAsync(id);
+        const reloaded = await store.GetSingleAsync(id);
 
-        chai.expect(reloaded.Name).equals(n2);
-        chai.expect(reloaded.OtherValue).equals(undefined);
-    }
+        chai.expect(reloaded.name).equals(n2);
+        chai.expect(reloaded.otherValue).equals(undefined);
+    });
 
-    @test('Test POST and Delete')
-    public async PostDelete() {
+    it("Test POST and Delete", async () => {
         const e1: TestClass = {
-            Id: 1,
-            Name: TestHelpers.RandomString(3),
+            id: 1,
+            name: TestHelpers.RandomString(3),
         };
 
         const e2: TestClass = {
-            Id: 2,
-            Name: TestHelpers.RandomString(3),
+            id: 2,
+            name: TestHelpers.RandomString(3),
         };
 
-        await this.store.PostAsync(e1);
-        await this.store.PostAsync(e2);
+        await store.PostAsync(e1);
+        await store.PostAsync(e2);
 
-        const res = await this.store.GetCollectionAsync();
+        const res = await store.GetCollectionAsync();
         chai.expect(res.value.length).equals(2);
 
-        await this.store.Delete(e1.Id);
+        await store.Delete(e1.id);
 
-        const res2 = await this.store.GetCollectionAsync();
+        const res2 = await store.GetCollectionAsync();
         chai.expect(res2.value.length).equals(1);
-        chai.expect(res2.value[0].Id).equals(e2.Id);
+        chai.expect(res2.value[0].id).equals(e2.id);
 
-        await this.store.Delete(e2.Id);
-        const res3 = await this.store.GetCollectionAsync();
+        await store.Delete(e2.id);
+        const res3 = await store.GetCollectionAsync();
         chai.expect(res3.value.length).equals(0);
-    }
-
-}
+    });
+});

@@ -1,5 +1,5 @@
-import { CustomAction } from 'furystack-core';
-import { ServerCustomAction } from './ServerCustomAction';
+import { CustomAction } from "furystack-core";
+import { ServerCustomAction } from "./ServerCustomAction";
 
 export abstract class ServerActionOwnerAbstract {
 
@@ -15,7 +15,7 @@ export abstract class ServerActionOwnerAbstract {
     public ImplementAction<TBody, TReturns>(
         actionName: string,
         implementation: (arg: TBody, req: Express.Request) => Promise<TReturns>) {
-            if (this.implementedActions.find((a) => a.Name === actionName)) {
+            if (this.implementedActions.find((a) => a.name === actionName)) {
                 throw Error(`Action ${actionName} has been already implemented`);
             }
             const action = this.getActionByName(actionName);
@@ -25,6 +25,6 @@ export abstract class ServerActionOwnerAbstract {
     }
 
     public async CallAction<TBody, TReturns>(actionName: string, body: TBody, req: Express.Request) {
-        return await this.implementedActions.find((a) => a.Name === actionName).CallAsync(body, req);
+        return await this.implementedActions.find((a) => a.name === actionName).CallAsync(body, req);
     }
 }

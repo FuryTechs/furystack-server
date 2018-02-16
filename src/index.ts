@@ -1,3 +1,3 @@
-export * from './endpointroute';
-export * from './dataproviders';
-export * from './mock';
+export * from "./endpointroute";
+export * from "./dataproviders";
+export * from "./mock";

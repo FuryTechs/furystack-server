@@ -1,21 +1,21 @@
-import { CollectionResult, CustomAction, EndpointEntitySet, EndpointEntityType, ODataQuery } from 'furystack-core';
-import { DataProviderBase } from '../index';
-import { ServerActionOwnerAbstract } from './ServerActionOwnerAbstract';
+import { CollectionResult, CustomAction, EndpointEntitySet, EndpointEntityType, ODataQuery } from "furystack-core";
+import { DataProviderBase } from "../index";
+import { ServerActionOwnerAbstract } from "./ServerActionOwnerAbstract";
 
 export class ServerEntitySet<TBaseType, TPrimaryKey> extends ServerActionOwnerAbstract {
 
     private dataProvider: DataProviderBase<any, any>;
 
     protected getActionByName<TBody, TReturns>(name: string): CustomAction<TBody, TReturns> {
-        return this.EndpointEntitySet.CustomAction(name) as CustomAction<TBody, TReturns>;
+        return this.endpointEntitySet.CustomAction(name) as CustomAction<TBody, TReturns>;
     }
 
     public get Name(): string {
-        return this.EndpointEntitySet.Name;
+        return this.endpointEntitySet.name;
     }
 
     public get EndpointEntityType(): EndpointEntityType {
-        return this.EndpointEntitySet.EndpointEntityType;
+        return this.endpointEntitySet.endpointEntityType;
     }
 
     public SetDataProvider(provider: DataProviderBase<TBaseType, TPrimaryKey>) {
@@ -26,11 +26,11 @@ export class ServerEntitySet<TBaseType, TPrimaryKey> extends ServerActionOwnerAb
         return this;
     }
 
-    public get DataProvider(): DataProviderBase<TBaseType, TPrimaryKey>{
+    public get DataProvider(): DataProviderBase<TBaseType, TPrimaryKey> {
         return this.dataProvider;
     }
 
-    constructor(private readonly EndpointEntitySet: EndpointEntitySet,
+    constructor(private readonly endpointEntitySet: EndpointEntitySet,
                 baseType: { new (): TBaseType },
                 primaryKey: { new (): TPrimaryKey }) {
         super();

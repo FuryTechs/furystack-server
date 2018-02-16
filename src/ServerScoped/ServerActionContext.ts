@@ -1,5 +1,5 @@
 export class ServerActionContext {
-    public Request: Express.Request;
-    public Response: Express.Response;
+    public request: Express.Request;
+    public response: Express.Response;
 
 }

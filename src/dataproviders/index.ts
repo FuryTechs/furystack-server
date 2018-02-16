@@ -1,2 +1,2 @@
-export * from './DataProviderBase';
-export * from './InMemoryProvider';
+export * from "./DataProviderBase";
+export * from "./InMemoryProvider";
