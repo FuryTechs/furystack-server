@@ -48,7 +48,7 @@
     "typescript": "^2.7.2"
   },
   "dependencies": {
-    "body-parser": "^1.18.2",
+    "body-parser": "^1.19.0",
     "express": "^4.16.2",
     "furystack-core": "^1.0.0-alpha-15",
     "lodash": "^4.17.5"
