@@ -49,7 +49,7 @@
   },
   "dependencies": {
     "body-parser": "^1.18.2",
-    "express": "^4.16.2",
+    "express": "^4.17.1",
     "furystack-core": "^1.0.0-alpha-15",
     "lodash": "^4.17.5"
   }
